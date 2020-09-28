@@ -82,7 +82,13 @@ def moving_statistic(
         )
         return out
 
-    new_chunks = (tuple(windows_per_chunk),)
+    if values.ndim == 1:
+        new_chunks = (tuple(windows_per_chunk),)
+    else:
+        # depth is 0 except in first axis
+        depth = tuple([depth] + ([0] * (values.ndim - 1)))
+        # new chunks are same except in first axis
+        new_chunks = tuple([tuple(windows_per_chunk)] + list(values.chunks[1:]))
     return values.map_overlap(
         blockwise_moving_stat,
         dtype=dtype,
