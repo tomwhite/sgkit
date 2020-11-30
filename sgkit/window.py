@@ -2,6 +2,7 @@ from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 import dask.array as da
 import numpy as np
+from typing_extensions import Literal
 from xarray import Dataset
 
 from sgkit.utils import conditional_merge_datasets, create_dataset
@@ -16,6 +17,7 @@ def window(
     ds: Dataset,
     size: int,
     step: Optional[int] = None,
+    unit: Literal["index", "physical"] = "index",
     merge: bool = True,
 ) -> Dataset:
     """Add fixed-size windowing information to a dataset.
@@ -59,11 +61,26 @@ def window(
     contig_window_contigs = []
     contig_window_starts = []
     contig_window_stops = []
-    for i in range(n_contigs):
-        starts, stops = _get_windows(contig_bounds[i], contig_bounds[i + 1], size, step)
-        contig_window_starts.append(starts)
-        contig_window_stops.append(stops)
-        contig_window_contigs.append(np.full_like(starts, i))
+    if unit == "index":
+        for i in range(n_contigs):
+            starts, stops = _get_windows(
+                contig_bounds[i], contig_bounds[i + 1], size, step
+            )
+            contig_window_starts.append(starts)
+            contig_window_stops.append(stops)
+            contig_window_contigs.append(np.full_like(starts, i))
+
+    elif unit == "physical":
+        variant_position = ds["variant_position"].values
+        for i in range(n_contigs):
+            positions = variant_position[contig_bounds[i] : contig_bounds[i + 1]]
+            # position is 1-based
+            pos_starts = np.arange(1, positions[-1] + 1, step=step)
+            pos_stops = pos_starts + size
+            starts, stops = _get_windows_physical(positions, pos_starts, pos_stops)
+            contig_window_starts.append(starts + contig_bounds[i])
+            contig_window_stops.append(stops + contig_bounds[i])
+            contig_window_contigs.append(np.full_like(starts, i))
 
     window_contigs = np.concatenate(contig_window_contigs)
     window_starts = np.concatenate(contig_window_starts)
@@ -95,6 +112,15 @@ def _get_windows(
     window_starts = np.arange(start, stop, step)
     window_stops = np.clip(window_starts + size, start, stop)
     return window_starts, window_stops
+
+
+def _get_windows_physical(
+    positions: ArrayLike, pos_starts: ArrayLike, pos_stops: ArrayLike
+) -> Tuple[ArrayLike, ArrayLike]:
+    window_starts = np.searchsorted(positions, pos_starts)
+    window_stops = np.searchsorted(positions, pos_stops)
+    non_empty_windows = window_starts != window_stops
+    return window_starts[non_empty_windows], window_stops[non_empty_windows]
 
 
 # Computing statistics for windows (internal code)
