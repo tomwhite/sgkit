@@ -8,7 +8,7 @@ from sgkit import variables
 from sgkit.utils import conditional_merge_datasets, create_dataset
 from sgkit.variables import window_contig, window_start, window_stop
 
-from .typing import ArrayLike, DType
+from .typing import ArrayLike, DType, PathType
 
 # Window definition (user code)
 
@@ -127,12 +127,12 @@ def window_by_accessible_bases(
     is_accessible = ds[variant_is_accessible].values
 
     def _get_windows_by_accessible_bases(
-        start: int, stop: int, size: int, step: int, is_accessible: ArrayLike
+        contig_index: int, start: int, stop: int, size: int, step: int, is_accessible: ArrayLike
     ) -> Tuple[ArrayLike, ArrayLike]:
         contig_is_accessible = is_accessible[start:stop]
         (idx,) = np.nonzero(contig_is_accessible)
         idx = np.append(idx, [len(contig_is_accessible)], axis=0)
-        idx_starts, idx_stops = _get_windows(0, len(idx) - 1, size, step)
+        idx_starts, idx_stops = _get_windows(-1, 0, len(idx) - 1, size, step)
         return idx[idx_starts], idx[idx_stops]
 
     return _window_per_contig(
@@ -144,6 +144,53 @@ def window_by_accessible_bases(
         step,
         is_accessible,
     )
+
+
+def window_by_bed(
+    ds: Dataset,
+    *,
+    bed: PathType,
+    variant_contig: Hashable = variables.variant_contig,
+    variant_position: Hashable = variables.variant_position,
+    merge: bool = True,
+) -> Dataset:
+    n_variants = ds.dims["variants"]
+    n_contigs = len(ds.attrs["contigs"])
+    contig_ids = np.arange(n_contigs)
+    contig_starts = np.searchsorted(ds[variant_contig].values, contig_ids)
+    contig_bounds = np.append(contig_starts, [n_variants], axis=0)
+
+    contig_window_contigs = []
+    contig_window_starts = []
+    contig_window_stops = []
+
+    # BED is 0-based, half-open.
+    from sgkit.io.bed import read_bed
+
+    df = read_bed(bed)
+    df = df.compute()
+    chrom = df[["chrom"]].to_numpy().squeeze()
+    chromStart = df[["chromStart"]].to_numpy().squeeze()
+    chromEnd = df[["chromEnd"]].to_numpy().squeeze()
+
+    # TODO: review this
+    # Change to 1-based (sgkit's convention)
+    chromStart += 1
+    chromEnd += 1
+
+    pos = ds[variant_position].values
+
+    # TODO: handle contig strings
+    def f(contig_index, start, stop, pos):
+        positions = pos[start:stop]
+        starts, stops = _get_windows_by_position_per_contig(
+            positions,
+            chromStart[chrom == contig_index],
+            chromEnd[chrom == contig_index],
+        )
+        return starts + start, stops + start
+
+    return _window_per_contig(ds, variant_contig, merge, f, pos)
 
 
 def _window_per_contig(
@@ -166,7 +213,7 @@ def _window_per_contig(
 
     for i in range(n_contigs):
         starts, stops = windowing_fn(
-            contig_bounds[i], contig_bounds[i + 1], *args, **kwargs
+            i, contig_bounds[i], contig_bounds[i + 1], *args, **kwargs
         )
         contig_window_starts.append(starts)
         contig_window_stops.append(stops)
@@ -196,7 +243,7 @@ def _window_per_contig(
 
 
 def _get_windows(
-    start: int, stop: int, size: int, step: int
+    contig_index: int, start: int, stop: int, size: int, step: int
 ) -> Tuple[ArrayLike, ArrayLike]:
     # Find the indexes for the start positions of all windows
     window_starts = np.arange(start, stop, step)
@@ -205,7 +252,7 @@ def _get_windows(
 
 
 def _get_windows_by_position(
-    start: int, stop: int, size: int, positions: ArrayLike
+    contig_index: int, start: int, stop: int, size: int, positions: ArrayLike
 ) -> Tuple[ArrayLike, ArrayLike]:
     contig_pos = positions[start:stop]
     contig_pos_starts = contig_pos
@@ -253,7 +300,7 @@ def moving_statistic(
         raise ValueError(
             f"Minimum chunk size ({min_chunksize}) must not be smaller than size ({size})."
         )
-    window_starts, window_stops = _get_windows(0, length, size, step)
+    window_starts, window_stops = _get_windows(-1, 0, length, size, step)
     return window_statistic(
         values, statistic, window_starts, window_stops, dtype, **kwargs
     )

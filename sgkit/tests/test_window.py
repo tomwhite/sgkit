@@ -14,6 +14,7 @@ from sgkit.window import (
     has_windows,
     moving_statistic,
     window_by_accessible_bases,
+    window_by_bed,
     window_by_index,
     window_by_position,
 )
@@ -144,7 +145,7 @@ def test_window_by_index__multiple_contigs(
     ],
 )
 def test_get_windows(start, stop, size, step, window_starts_exp, window_stops_exp):
-    window_starts, window_stops = _get_windows(start, stop, size, step)
+    window_starts, window_stops = _get_windows(-1, start, stop, size, step)
     np.testing.assert_equal(window_starts, window_starts_exp)
     np.testing.assert_equal(window_stops, window_stops_exp)
 
@@ -245,3 +246,31 @@ def test_window_by_accessible_bases():
     np.testing.assert_equal(ds2[window_contig].values, [0, 0, 0, 0, 0])
     np.testing.assert_equal(ds2[window_start].values, [0, 3, 4, 6, 8])
     np.testing.assert_equal(ds2[window_stop].values, [4, 6, 8, 9, 9])
+
+
+def test_window_by_bed(shared_datadir):
+    ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, seed=0)
+    assert not has_windows(ds)
+    ds["variant_position"] = (
+        ["variants"],
+        np.array([1, 4, 9, 10, 11, 16, 19, 23, 45, 46]),
+    )
+    ds = window_by_bed(ds, bed=shared_datadir / "sample.bed")
+    assert has_windows(ds)
+    np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0])
+    np.testing.assert_equal(ds[window_start].values, [0, 4, 7, 8])
+    np.testing.assert_equal(ds[window_stop].values, [4, 7, 8, 10])
+
+
+def test_window__bed_multiple_contigs(shared_datadir):
+    ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, n_contig=2)
+    assert not has_windows(ds)
+    ds["variant_position"] = (
+        ["variants"],
+        np.array([1, 4, 6, 8, 12, 1, 21, 25, 40, 55]),
+    )
+    ds = window_by_bed(ds, bed=shared_datadir / "sample2.bed")
+    assert has_windows(ds)
+    np.testing.assert_equal(ds[window_contig].values, [0, 0, 1, 1, 1, 1])
+    np.testing.assert_equal(ds[window_start].values, [0, 4, 5, 6, 8, 9])
+    np.testing.assert_equal(ds[window_stop].values, [4, 5, 6, 8, 9, 10])
