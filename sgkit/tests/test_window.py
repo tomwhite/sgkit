@@ -196,17 +196,17 @@ def test_get_chunked_windows(
 
 
 def test_window__physical():
-    ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, seed=0)
+    ds = simulate_genotype_call_dataset(n_variant=5, n_sample=3, seed=0)
     assert not has_windows(ds)
     ds["variant_position"] = (
         ["variants"],
-        np.array([1, 4, 9, 10, 11, 16, 19, 23, 45, 46]),
+        np.array([1, 4, 6, 8, 12]),
     )
-    ds = window(ds, 10, unit="physical")
+    ds = window(ds, 5, unit="physical")
     assert has_windows(ds)
-    np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0])
-    np.testing.assert_equal(ds[window_start].values, [0, 4, 7, 8])
-    np.testing.assert_equal(ds[window_stop].values, [4, 7, 8, 10])
+    np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0])
+    np.testing.assert_equal(ds[window_start].values, [0, 0, 1, 1, 3])
+    np.testing.assert_equal(ds[window_stop].values, [2, 4, 4, 5, 5])
 
 
 def test_window__physical_multiple_contigs():
@@ -217,6 +217,6 @@ def test_window__physical_multiple_contigs():
     )
     ds = window(ds, 10, unit="physical")
     assert has_windows(ds)
-    np.testing.assert_equal(ds[window_contig].values, [0, 0, 1, 1, 1, 1])
-    np.testing.assert_equal(ds[window_start].values, [0, 4, 5, 6, 8, 9])
-    np.testing.assert_equal(ds[window_stop].values, [4, 5, 6, 8, 9, 10])
+    np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    np.testing.assert_equal(ds[window_start].values, [0, 0, 0, 0, 1, 5, 6, 6, 8, 9])
+    np.testing.assert_equal(ds[window_stop].values, [4, 5, 5, 5, 5, 6, 8, 8, 9, 10])

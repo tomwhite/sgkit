@@ -74,13 +74,13 @@ def window(
         variant_position = ds["variant_position"].values
         for i in range(n_contigs):
             positions = variant_position[contig_bounds[i] : contig_bounds[i + 1]]
-            # position is 1-based
-            pos_starts = np.arange(1, positions[-1] + 1, step=step)
-            pos_stops = pos_starts + size
+            # left side is inclusive (TODO: check this is consistent with other tools)
+            pos_starts = positions - size + 1
+            pos_stops = positions + size
             starts, stops = _get_windows_physical(positions, pos_starts, pos_stops)
             contig_window_starts.append(starts + contig_bounds[i])
             contig_window_stops.append(stops + contig_bounds[i])
-            contig_window_contigs.append(np.full_like(starts, i))
+            contig_window_contigs.append(np.full_like(positions, i))
 
     window_contigs = np.concatenate(contig_window_contigs)
     window_starts = np.concatenate(contig_window_starts)
