@@ -45,6 +45,8 @@ def window(
     -------
     A dataset containing the following variables:
 
+    - :data:`sgkit.variables.window_contig_spec` (windows):
+      The index values of window contigs.
     - :data:`sgkit.variables.window_start_spec` (windows):
       The index values of window start positions.
     - :data:`sgkit.variables.window_stop_spec` (windows):
