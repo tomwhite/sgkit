@@ -117,6 +117,60 @@ def window(
     return conditional_merge_datasets(ds, new_ds, merge)
 
 
+def window_by_position(
+    ds: Dataset,
+    *,
+    size: int,
+    variant_contig: Hashable = variables.variant_contig,
+    variant_position: Hashable = variables.variant_position,
+    merge: bool = True,
+) -> Dataset:
+    n_variants = ds.dims["variants"]
+    n_contigs = len(ds.attrs["contigs"])
+    contig_ids = np.arange(n_contigs)
+    contig_starts = np.searchsorted(ds[variant_contig].values, contig_ids)
+    contig_bounds = np.append(contig_starts, [n_variants], axis=0)
+
+    contig_window_contigs = []
+    contig_window_starts = []
+    contig_window_stops = []
+
+    pos = ds[variant_position].values
+    for i in range(n_contigs):
+        # TODO: check contig_pos is monotonically increasing
+        contig_pos = pos[contig_bounds[i] : contig_bounds[i + 1]]
+        contig_pos_starts = contig_pos
+        contig_pos_stops = contig_pos + size
+        starts, stops = _get_windows_physical(
+            contig_pos, contig_pos_starts, contig_pos_stops
+        )
+        contig_window_starts.append(starts + contig_bounds[i])
+        contig_window_stops.append(stops + contig_bounds[i])
+        contig_window_contigs.append(np.full_like(contig_pos, i))
+
+    window_contigs = np.concatenate(contig_window_contigs)
+    window_starts = np.concatenate(contig_window_starts)
+    window_stops = np.concatenate(contig_window_stops)
+
+    new_ds = create_dataset(
+        {
+            window_contig: (
+                "windows",
+                window_contigs,
+            ),
+            window_start: (
+                "windows",
+                window_starts,
+            ),
+            window_stop: (
+                "windows",
+                window_stops,
+            ),
+        }
+    )
+    return conditional_merge_datasets(ds, new_ds, merge)
+
+
 def _get_windows(
     start: int, stop: int, size: int, step: int
 ) -> Tuple[ArrayLike, ArrayLike]:

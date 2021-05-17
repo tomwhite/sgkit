@@ -14,6 +14,7 @@ from sgkit.window import (
     has_windows,
     moving_statistic,
     window,
+    window_by_position,
 )
 
 
@@ -195,27 +196,27 @@ def test_get_chunked_windows(
     np.testing.assert_equal(windows_per_chunk_actual, windows_per_chunk_exp)
 
 
-def test_window__physical():
+def test_window_by_position():
     ds = simulate_genotype_call_dataset(n_variant=5, n_sample=3, seed=0)
     assert not has_windows(ds)
     ds["variant_position"] = (
         ["variants"],
         np.array([1, 4, 6, 8, 12]),
     )
-    ds = window(ds, size=5, unit="physical")
+    ds = window_by_position(ds, size=5)
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0])
     np.testing.assert_equal(ds[window_start].values, [0, 1, 2, 3, 4])
     np.testing.assert_equal(ds[window_stop].values, [2, 4, 4, 5, 5])
 
 
-def test_window__physical_multiple_contigs():
+def test_window_by_position__multiple_contigs():
     ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, n_contig=2)
     ds["variant_position"] = (
         ["variants"],
         np.array([1, 4, 6, 8, 12, 1, 21, 25, 40, 55]),
     )
-    ds = window(ds, size=10, unit="physical")
+    ds = window_by_position(ds, size=10)
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
     np.testing.assert_equal(ds[window_start].values, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
