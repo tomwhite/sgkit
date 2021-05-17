@@ -30,6 +30,11 @@ def window(
     used by some downstream functions to calculate statistics for
     each window.
 
+    TODO: windows do not span contigs.
+    Position is only used for unit="physical".
+    Step is only used for unit="index".
+    Examples. How to do physical windows around a pos?
+
     Parameters
     ----------
     ds
@@ -56,7 +61,6 @@ def window(
     - :data:`sgkit.variables.window_stop_spec` (windows):
       The index values of window stop positions.
     """
-    step = step or size
     n_variants = ds.dims["variants"]
     n_contigs = len(ds.attrs["contigs"])
     contig_ids = np.arange(n_contigs)
@@ -67,6 +71,7 @@ def window(
     contig_window_starts = []
     contig_window_stops = []
     if unit == "index":
+        step = step or size
         for i in range(n_contigs):
             starts, stops = _get_windows(
                 contig_bounds[i], contig_bounds[i + 1], size, step
@@ -78,6 +83,7 @@ def window(
     elif unit == "physical":
         pos = ds[variant_position].values
         for i in range(n_contigs):
+            # TODO: check contig_pos is monotonically increasing
             contig_pos = pos[contig_bounds[i] : contig_bounds[i + 1]]
             contig_pos_starts = contig_pos
             contig_pos_stops = contig_pos + size
