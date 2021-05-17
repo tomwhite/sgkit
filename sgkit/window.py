@@ -2,7 +2,6 @@ from typing import Any, Callable, Hashable, Iterable, Optional, Tuple, Union
 
 import dask.array as da
 import numpy as np
-from typing_extensions import Literal
 from xarray import Dataset
 
 from sgkit import variables
@@ -14,14 +13,12 @@ from .typing import ArrayLike, DType
 # Window definition (user code)
 
 
-def window(
+def window_by_index(
     ds: Dataset,
     *,
     size: int,
     step: Optional[int] = None,
-    unit: Literal["index", "physical"] = "index",
     variant_contig: Hashable = variables.variant_contig,
-    variant_position: Hashable = variables.variant_position,
     merge: bool = True,
 ) -> Dataset:
     """Add fixed-size windowing information to a dataset.
@@ -61,38 +58,22 @@ def window(
     - :data:`sgkit.variables.window_stop_spec` (windows):
       The index values of window stop positions.
     """
+    step = step or size
     n_variants = ds.dims["variants"]
     n_contigs = len(ds.attrs["contigs"])
     contig_ids = np.arange(n_contigs)
-    contig_starts = np.searchsorted(ds["variant_contig"].values, contig_ids)
+    contig_starts = np.searchsorted(ds[variant_contig].values, contig_ids)
     contig_bounds = np.append(contig_starts, [n_variants], axis=0)
 
     contig_window_contigs = []
     contig_window_starts = []
     contig_window_stops = []
-    if unit == "index":
-        step = step or size
-        for i in range(n_contigs):
-            starts, stops = _get_windows(
-                contig_bounds[i], contig_bounds[i + 1], size, step
-            )
-            contig_window_starts.append(starts)
-            contig_window_stops.append(stops)
-            contig_window_contigs.append(np.full_like(starts, i))
 
-    elif unit == "physical":
-        pos = ds[variant_position].values
-        for i in range(n_contigs):
-            # TODO: check contig_pos is monotonically increasing
-            contig_pos = pos[contig_bounds[i] : contig_bounds[i + 1]]
-            contig_pos_starts = contig_pos
-            contig_pos_stops = contig_pos + size
-            starts, stops = _get_windows_physical(
-                contig_pos, contig_pos_starts, contig_pos_stops
-            )
-            contig_window_starts.append(starts + contig_bounds[i])
-            contig_window_stops.append(stops + contig_bounds[i])
-            contig_window_contigs.append(np.full_like(contig_pos, i))
+    for i in range(n_contigs):
+        starts, stops = _get_windows(contig_bounds[i], contig_bounds[i + 1], size, step)
+        contig_window_starts.append(starts)
+        contig_window_stops.append(stops)
+        contig_window_contigs.append(np.full_like(starts, i))
 
     window_contigs = np.concatenate(contig_window_contigs)
     window_starts = np.concatenate(contig_window_starts)
@@ -115,6 +96,9 @@ def window(
         }
     )
     return conditional_merge_datasets(ds, new_ds, merge)
+
+
+window = window_by_index
 
 
 def window_by_position(
