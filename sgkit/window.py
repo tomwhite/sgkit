@@ -74,8 +74,7 @@ def window(
         variant_position = ds["variant_position"].values
         for i in range(n_contigs):
             positions = variant_position[contig_bounds[i] : contig_bounds[i + 1]]
-            # left side is inclusive (TODO: check this is consistent with other tools)
-            pos_starts = positions - size + 1
+            pos_starts = positions
             pos_stops = positions + size
             starts, stops = _get_windows_physical(positions, pos_starts, pos_stops)
             contig_window_starts.append(starts + contig_bounds[i])
