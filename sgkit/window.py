@@ -20,6 +20,7 @@ def window(
     size: int,
     step: Optional[int] = None,
     unit: Literal["index", "physical"] = "index",
+    variant_contig: Hashable = variables.variant_contig,
     variant_position: Hashable = variables.variant_position,
     merge: bool = True,
 ) -> Dataset:
@@ -59,8 +60,7 @@ def window(
     n_variants = ds.dims["variants"]
     n_contigs = len(ds.attrs["contigs"])
     contig_ids = np.arange(n_contigs)
-    variant_contig = ds["variant_contig"]
-    contig_starts = np.searchsorted(variant_contig.values, contig_ids)
+    contig_starts = np.searchsorted(ds["variant_contig"].values, contig_ids)
     contig_bounds = np.append(contig_starts, [n_variants], axis=0)
 
     contig_window_contigs = []
