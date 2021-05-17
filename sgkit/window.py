@@ -1,10 +1,11 @@
-from typing import Any, Callable, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Hashable, Iterable, Optional, Tuple, Union
 
 import dask.array as da
 import numpy as np
 from typing_extensions import Literal
 from xarray import Dataset
 
+from sgkit import variables
 from sgkit.utils import conditional_merge_datasets, create_dataset
 from sgkit.variables import window_contig, window_start, window_stop
 
@@ -18,6 +19,7 @@ def window(
     size: int,
     step: Optional[int] = None,
     unit: Literal["index", "physical"] = "index",
+    variant_position: Hashable = variables.variant_position,
     merge: bool = True,
 ) -> Dataset:
     """Add fixed-size windowing information to a dataset.
@@ -73,15 +75,17 @@ def window(
             contig_window_contigs.append(np.full_like(starts, i))
 
     elif unit == "physical":
-        variant_position = ds["variant_position"].values
+        pos = ds[variant_position].values
         for i in range(n_contigs):
-            positions = variant_position[contig_bounds[i] : contig_bounds[i + 1]]
-            pos_starts = positions
-            pos_stops = positions + size
-            starts, stops = _get_windows_physical(positions, pos_starts, pos_stops)
+            contig_pos = pos[contig_bounds[i] : contig_bounds[i + 1]]
+            contig_pos_starts = contig_pos
+            contig_pos_stops = contig_pos + size
+            starts, stops = _get_windows_physical(
+                contig_pos, contig_pos_starts, contig_pos_stops
+            )
             contig_window_starts.append(starts + contig_bounds[i])
             contig_window_stops.append(stops + contig_bounds[i])
-            contig_window_contigs.append(np.full_like(positions, i))
+            contig_window_contigs.append(np.full_like(contig_pos, i))
 
     window_contigs = np.concatenate(contig_window_contigs)
     window_starts = np.concatenate(contig_window_starts)
