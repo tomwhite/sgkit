@@ -16,6 +16,7 @@ from .typing import ArrayLike, DType
 
 def window(
     ds: Dataset,
+    *,
     size: int,
     step: Optional[int] = None,
     unit: Literal["index", "physical"] = "index",

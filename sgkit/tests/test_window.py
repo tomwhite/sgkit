@@ -74,20 +74,20 @@ def test_moving_statistic__min_chunksize_smaller_than_size():
 def test_window():
     ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, seed=0)
     assert not has_windows(ds)
-    ds = window(ds, 2, 2)
+    ds = window(ds, size=2, step=2)
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0])
     np.testing.assert_equal(ds[window_start].values, [0, 2, 4, 6, 8])
     np.testing.assert_equal(ds[window_stop].values, [2, 4, 6, 8, 10])
 
     with pytest.raises(MergeWarning):
-        window(ds, 2, 2)
+        window(ds, size=2, step=2)
 
 
 def test_window__default_step():
     ds = simulate_genotype_call_dataset(n_variant=10, n_sample=3, seed=0)
     assert not has_windows(ds)
-    ds = window(ds, 2)
+    ds = window(ds, size=2)
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0])
     np.testing.assert_equal(ds[window_start].values, [0, 2, 4, 6, 8])
@@ -126,7 +126,7 @@ def test_window__multiple_contigs(
     ds = simulate_genotype_call_dataset(
         n_variant=n_variant, n_sample=1, n_contig=n_contig
     )
-    ds = window(ds, 2, 2)
+    ds = window(ds, size=2, step=2)
     np.testing.assert_equal(ds[window_contig].values, window_contigs_exp)
     np.testing.assert_equal(ds[window_start].values, window_starts_exp)
     np.testing.assert_equal(ds[window_stop].values, window_stops_exp)
@@ -202,7 +202,7 @@ def test_window__physical():
         ["variants"],
         np.array([1, 4, 6, 8, 12]),
     )
-    ds = window(ds, 5, unit="physical")
+    ds = window(ds, size=5, unit="physical")
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0])
     np.testing.assert_equal(ds[window_start].values, [0, 1, 2, 3, 4])
@@ -215,7 +215,7 @@ def test_window__physical_multiple_contigs():
         ["variants"],
         np.array([1, 4, 6, 8, 12, 1, 21, 25, 40, 55]),
     )
-    ds = window(ds, 10, unit="physical")
+    ds = window(ds, size=10, unit="physical")
     assert has_windows(ds)
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
     np.testing.assert_equal(ds[window_start].values, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
