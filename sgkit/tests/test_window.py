@@ -13,6 +13,7 @@ from sgkit.window import (
     _get_windows,
     has_windows,
     moving_statistic,
+    window_by_accessible_bases,
     window_by_index,
     window_by_position,
 )
@@ -221,3 +222,26 @@ def test_window_by_position__multiple_contigs():
     np.testing.assert_equal(ds[window_contig].values, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
     np.testing.assert_equal(ds[window_start].values, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     np.testing.assert_equal(ds[window_stop].values, [4, 5, 5, 5, 5, 6, 8, 8, 9, 10])
+
+
+def test_window_by_accessible_bases():
+    ds = simulate_genotype_call_dataset(n_variant=9, n_sample=3, seed=0)
+    assert not has_windows(ds)
+    ds["variant_is_accessible"] = (
+        ["variants"],
+        np.array([1, 0, 0, 1, 1, 0, 1, 0, 1]),
+    )
+
+    # TODO: these differ from scikit-allel
+
+    ds2 = window_by_accessible_bases(ds, size=2)
+    assert has_windows(ds2)
+    np.testing.assert_equal(ds2[window_contig].values, [0, 0, 0])
+    np.testing.assert_equal(ds2[window_start].values, [0, 4, 8])
+    np.testing.assert_equal(ds2[window_stop].values, [4, 8, 9])
+
+    ds2 = window_by_accessible_bases(ds, size=2, step=1)
+    assert has_windows(ds2)
+    np.testing.assert_equal(ds2[window_contig].values, [0, 0, 0, 0, 0])
+    np.testing.assert_equal(ds2[window_start].values, [0, 3, 4, 6, 8])
+    np.testing.assert_equal(ds2[window_stop].values, [4, 6, 8, 9, 9])

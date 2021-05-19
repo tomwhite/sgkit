@@ -114,6 +114,38 @@ def window_by_position(
     )
 
 
+def window_by_accessible_bases(
+    ds: Dataset,
+    *,
+    size: int,
+    step: Optional[int] = None,
+    variant_contig: Hashable = variables.variant_contig,
+    variant_is_accessible: Hashable = "variant_is_accessible",
+    merge: bool = True,
+) -> Dataset:
+    step = step or size
+    is_accessible = ds[variant_is_accessible].values
+
+    def _get_windows_by_accessible_bases(
+        start: int, stop: int, size: int, step: int, is_accessible: ArrayLike
+    ) -> Tuple[ArrayLike, ArrayLike]:
+        contig_is_accessible = is_accessible[start:stop]
+        (idx,) = np.nonzero(contig_is_accessible)
+        idx = np.append(idx, [len(contig_is_accessible)], axis=0)
+        idx_starts, idx_stops = _get_windows(0, len(idx) - 1, size, step)
+        return idx[idx_starts], idx[idx_stops]
+
+    return _window_per_contig(
+        ds,
+        variant_contig,
+        merge,
+        _get_windows_by_accessible_bases,
+        size,
+        step,
+        is_accessible,
+    )
+
+
 def _window_per_contig(
     ds: Dataset,
     variant_contig: Hashable,
