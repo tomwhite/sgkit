@@ -59,43 +59,7 @@ def window_by_index(
       The index values of window stop positions.
     """
     step = step or size
-    n_variants = ds.dims["variants"]
-    n_contigs = len(ds.attrs["contigs"])
-    contig_ids = np.arange(n_contigs)
-    contig_starts = np.searchsorted(ds[variant_contig].values, contig_ids)
-    contig_bounds = np.append(contig_starts, [n_variants], axis=0)
-
-    contig_window_contigs = []
-    contig_window_starts = []
-    contig_window_stops = []
-
-    for i in range(n_contigs):
-        starts, stops = _get_windows(contig_bounds[i], contig_bounds[i + 1], size, step)
-        contig_window_starts.append(starts)
-        contig_window_stops.append(stops)
-        contig_window_contigs.append(np.full_like(starts, i))
-
-    window_contigs = np.concatenate(contig_window_contigs)
-    window_starts = np.concatenate(contig_window_starts)
-    window_stops = np.concatenate(contig_window_stops)
-
-    new_ds = create_dataset(
-        {
-            window_contig: (
-                "windows",
-                window_contigs,
-            ),
-            window_start: (
-                "windows",
-                window_starts,
-            ),
-            window_stop: (
-                "windows",
-                window_stops,
-            ),
-        }
-    )
-    return conditional_merge_datasets(ds, new_ds, merge)
+    return _window_per_contig(ds, variant_contig, merge, _get_windows, size, step)
 
 
 window = window_by_index
@@ -109,6 +73,21 @@ def window_by_position(
     variant_position: Hashable = variables.variant_position,
     merge: bool = True,
 ) -> Dataset:
+
+    positions = ds[variant_position].values
+    return _window_per_contig(
+        ds, variant_contig, merge, _get_windows_physical2, size, positions
+    )
+
+
+def _window_per_contig(
+    ds: Dataset,
+    variant_contig: Hashable,
+    merge: bool,
+    windowing_fn: Callable[..., Any],
+    *args: Any,
+    **kwargs: Any,
+) -> Dataset:
     n_variants = ds.dims["variants"]
     n_contigs = len(ds.attrs["contigs"])
     contig_ids = np.arange(n_contigs)
@@ -119,18 +98,13 @@ def window_by_position(
     contig_window_starts = []
     contig_window_stops = []
 
-    pos = ds[variant_position].values
     for i in range(n_contigs):
-        # TODO: check contig_pos is monotonically increasing
-        contig_pos = pos[contig_bounds[i] : contig_bounds[i + 1]]
-        contig_pos_starts = contig_pos
-        contig_pos_stops = contig_pos + size
-        starts, stops = _get_windows_physical(
-            contig_pos, contig_pos_starts, contig_pos_stops
+        starts, stops = windowing_fn(
+            contig_bounds[i], contig_bounds[i + 1], *args, **kwargs
         )
-        contig_window_starts.append(starts + contig_bounds[i])
-        contig_window_stops.append(stops + contig_bounds[i])
-        contig_window_contigs.append(np.full_like(contig_pos, i))
+        contig_window_starts.append(starts)
+        contig_window_stops.append(stops)
+        contig_window_contigs.append(np.full_like(starts, i))
 
     window_contigs = np.concatenate(contig_window_contigs)
     window_starts = np.concatenate(contig_window_starts)
@@ -171,6 +145,19 @@ def _get_windows_physical(
     window_stops = np.searchsorted(positions, pos_stops)
     non_empty_windows = window_starts != window_stops
     return window_starts[non_empty_windows], window_stops[non_empty_windows]
+
+
+def _get_windows_physical2(
+    start: int, stop: int, size: int, positions: ArrayLike
+) -> Tuple[ArrayLike, ArrayLike]:
+    # TODO: check contig_pos is monotonically increasing
+    contig_pos = positions[start:stop]
+    contig_pos_starts = contig_pos
+    contig_pos_stops = contig_pos + size
+    starts, stops = _get_windows_physical(
+        contig_pos, contig_pos_starts, contig_pos_stops
+    )
+    return starts + start, stops + start
 
 
 # Computing statistics for windows (internal code)
