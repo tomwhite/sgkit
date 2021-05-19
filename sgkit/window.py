@@ -21,26 +21,24 @@ def window_by_index(
     variant_contig: Hashable = variables.variant_contig,
     merge: bool = True,
 ) -> Dataset:
-    """Add fixed-size windowing information to a dataset.
+    """Add window information to a dataset, measured by number of variants.
 
     Windows are defined over the ``variants`` dimension, and are
     used by some downstream functions to calculate statistics for
-    each window.
-
-    TODO: windows do not span contigs.
-    Position is only used for unit="physical".
-    Step is only used for unit="index".
-    Examples. How to do physical windows around a pos?
+    each window. Windows never span contigs.
 
     Parameters
     ----------
     ds
         Genotype call dataset.
     size
-        The window size (number of variants).
+        The window size, measured by number of variants.
     step
         The distance (number of variants) between start positions of windows.
         Defaults to ``size``.
+    variant_contig
+        Name of variable containing variant contig indexes.
+        Defined by :data:`sgkit.variables.variant_contig_spec`.
     merge
         If True (the default), merge the input dataset and the computed
         output variables into a single dataset, otherwise return only
@@ -73,10 +71,46 @@ def window_by_position(
     variant_position: Hashable = variables.variant_position,
     merge: bool = True,
 ) -> Dataset:
+    """Add window information to a dataset, measured by distance along the genome.
+
+    Windows are defined over the ``variants`` dimension, and are
+    used by some downstream functions to calculate statistics for
+    each window. Windows never span contigs.
+
+    Parameters
+    ----------
+    ds
+        Genotype call dataset.
+    size
+        The window size, measured by number of base pairs.
+    variant_contig
+        Name of variable containing variant contig indexes.
+        Defined by :data:`sgkit.variables.variant_contig_spec`.
+    variant_position
+        Name of variable containing variant positions.
+        Must be monotonically increasing within a contig.
+        Defined by :data:`sgkit.variables.variant_position_spec`.
+    merge
+        If True (the default), merge the input dataset and the computed
+        output variables into a single dataset, otherwise return only
+        the computed output variables.
+        See :ref:`dataset_merge` for more details.
+
+    Returns
+    -------
+    A dataset containing the following variables:
+
+    - :data:`sgkit.variables.window_contig_spec` (windows):
+      The index values of window contigs.
+    - :data:`sgkit.variables.window_start_spec` (windows):
+      The index values of window start positions.
+    - :data:`sgkit.variables.window_stop_spec` (windows):
+      The index values of window stop positions.
+    """
 
     positions = ds[variant_position].values
     return _window_per_contig(
-        ds, variant_contig, merge, _get_windows_physical2, size, positions
+        ds, variant_contig, merge, _get_windows_by_position, size, positions
     )
 
 
@@ -138,26 +172,26 @@ def _get_windows(
     return window_starts, window_stops
 
 
-def _get_windows_physical(
+def _get_windows_by_position(
+    start: int, stop: int, size: int, positions: ArrayLike
+) -> Tuple[ArrayLike, ArrayLike]:
+    contig_pos = positions[start:stop]
+    contig_pos_starts = contig_pos
+    contig_pos_stops = contig_pos + size
+    starts, stops = _get_windows_by_position_per_contig(
+        contig_pos, contig_pos_starts, contig_pos_stops
+    )
+    return starts + start, stops + start
+
+
+def _get_windows_by_position_per_contig(
     positions: ArrayLike, pos_starts: ArrayLike, pos_stops: ArrayLike
 ) -> Tuple[ArrayLike, ArrayLike]:
+    # TODO: check positions is monotonically increasing
     window_starts = np.searchsorted(positions, pos_starts)
     window_stops = np.searchsorted(positions, pos_stops)
     non_empty_windows = window_starts != window_stops
     return window_starts[non_empty_windows], window_stops[non_empty_windows]
-
-
-def _get_windows_physical2(
-    start: int, stop: int, size: int, positions: ArrayLike
-) -> Tuple[ArrayLike, ArrayLike]:
-    # TODO: check contig_pos is monotonically increasing
-    contig_pos = positions[start:stop]
-    contig_pos_starts = contig_pos
-    contig_pos_stops = contig_pos + size
-    starts, stops = _get_windows_physical(
-        contig_pos, contig_pos_starts, contig_pos_stops
-    )
-    return starts + start, stops + start
 
 
 # Computing statistics for windows (internal code)
