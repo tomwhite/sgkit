@@ -33,7 +33,7 @@ jobs:
     - name: Check for Sphinx doc warnings
       run: |
         cd docs
-        make html SPHINXOPTS="-W --keep-going -n"
+        make html SPHINXOPTS="-W --keep-going -n -v"
     - uses: actions/upload-artifact@v2
       if: failure()
       with:
