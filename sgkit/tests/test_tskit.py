@@ -7,7 +7,7 @@ from xarray import Dataset
 import sgkit as sg
 from sgkit.io.vcf import vcf_to_zarr
 
-from .tskit_zarr import ts_to_zarr
+from .tskit_zarr import read_ts, ts_to_zarr
 
 
 def assert_identical(ds1: Dataset, ds2: Dataset) -> None:
@@ -85,6 +85,56 @@ def test_roundtrip(tmp_path, sample_size, ploidy, chunk_length, chunk_width):
         chunk_length=chunk_length,
         chunk_width=chunk_width,
     )
+
+    # test they are the same
+    vcf_ds = sg.load_dataset(str(output_zarr_from_vcf))
+    ts_ds = sg.load_dataset(str(output_zarr_from_ts))
+
+    vcf_ds = vcf_ds.drop_vars("call_genotype_phased")  # not included in ts_to_zarr
+
+    assert_identical(vcf_ds, ts_ds)
+
+
+@pytest.mark.parametrize(
+    "sample_size, ploidy",
+    [(3, 1), (3, 2)],
+)
+@pytest.mark.parametrize(
+    "chunk_length, chunk_width",
+    [(3, -1), (3, 2)],
+)
+# TODO: remove this and use special object dtype with varlen metadata
+@pytest.mark.filterwarnings("ignore::xarray.coding.variables.SerializationWarning")
+def test_read_ts(tmp_path, sample_size, ploidy, chunk_length, chunk_width):
+    output_vcf = tmp_path.joinpath("vcf").as_posix()
+    output_zarr_from_vcf = tmp_path.joinpath("vcf.zarr").as_posix()
+    output_zarr_from_ts = tmp_path.joinpath("ts.zarr").as_posix()
+
+    ts = simulate_ts(sample_size, ploidy=ploidy)
+
+    # write ts as vcf
+    with open(output_vcf, "w") as vcf_file:
+        ts.write_vcf(vcf_file)
+    print(output_vcf)
+
+    # convert vcf to zarr
+    vcf_to_zarr(
+        output_vcf,
+        output_zarr_from_vcf,
+        ploidy=ploidy,
+        chunk_length=chunk_length,
+        chunk_width=chunk_width,
+    )
+
+    # convert ts to xarray, then as zarr
+    ds = read_ts(
+        ts,
+        ploidy=ploidy,
+        chunk_length=chunk_length,
+        chunk_width=chunk_width,
+    )
+    # print(ds.load())
+    sg.save_dataset(ds, output_zarr_from_ts)
 
     # test they are the same
     vcf_ds = sg.load_dataset(str(output_zarr_from_vcf))
