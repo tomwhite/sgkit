@@ -1,0 +1,48 @@
+name: sgkit-doc-3.8
+dependencies:
+  - python=3.8
+  - pip
+  - numpy < 1.23
+  - xarray
+  - dask[array] >= 2022.01.0, < 2022.8.1
+  - distributed >= 2022.01.0, < 2022.8.1
+  - dask-ml
+  - scipy
+  - typing-extensions
+  - numba
+  - zarr >= 2.10.0, != 2.11.0, != 2.11.1, != 2.11.2
+  - fsspec != 2021.6.0
+  - codecov
+  - pre-commit
+  - pytest
+  - pytest-cov
+  - pytest-datadir
+  - pytest-mock
+  - hypothesis
+  - statsmodels
+  - msprime>=1.0
+  - scikit-learn
+  - partd
+  #- bed-reader
+  - rechunker
+  - cbgen
+  - yarl
+  - matplotlib
+  - asv
+  - networkx
+  - aiohttp
+  - requests
+  - pydata-sphinx-theme
+  - sphinx >4, <=4.2.0
+  - sphinx-book-theme
+  - ipython
+  - python-graphviz
+  - seaborn
+  - ablog!=0.10.27
+  - pip:
+    - callee
+    - cyvcf2 == 0.30.12
+    - scikit-allel
+    - myst_nb
+    - scanpydoc
+    - sphinx_autodoc_typehints >= 1.14.0
