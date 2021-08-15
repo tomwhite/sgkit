@@ -3,7 +3,6 @@ from typing import Any, Optional, Union
 import dask.array as da
 import numpy as np
 import xarray as xr
-from dask_ml.decomposition import TruncatedSVD
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 from typing_extensions import Literal
@@ -15,6 +14,11 @@ from ..typing import ArrayLike, DType, RandomStateType
 from ..utils import conditional_merge_datasets
 from .aggregation import count_call_alleles
 from .preprocessing import PattersonScaler
+
+try:
+    from dask_ml.decomposition import TruncatedSVD
+except ImportError:
+    pass
 
 
 def pca_est(
