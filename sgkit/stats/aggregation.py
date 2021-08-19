@@ -3,7 +3,7 @@ from typing import Any, Dict, Hashable
 import dask.array as da
 import numpy as np
 import xarray as xr
-from numba import guvectorize
+# from numba import guvectorize
 from typing_extensions import Literal
 from xarray import Dataset
 
@@ -19,17 +19,17 @@ from sgkit.utils import (
 Dimension = Literal["samples", "variants"]
 
 
-@guvectorize(  # type: ignore
-    [
-        "void(int8[:], uint8[:], uint8[:])",
-        "void(int16[:], uint8[:], uint8[:])",
-        "void(int32[:], uint8[:], uint8[:])",
-        "void(int64[:], uint8[:], uint8[:])",
-    ],
-    "(k),(n)->(n)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(int8[:], uint8[:], uint8[:])",
+#         "void(int16[:], uint8[:], uint8[:])",
+#         "void(int32[:], uint8[:], uint8[:])",
+#         "void(int64[:], uint8[:], uint8[:])",
+#     ],
+#     "(k),(n)->(n)",
+#     nopython=True,
+#     cache=True,
+# )
 def count_alleles(
     g: ArrayLike, _: ArrayLike, out: ArrayLike
 ) -> None:  # pragma: no cover
@@ -61,15 +61,15 @@ def count_alleles(
 
 
 # n = samples, c = cohorts, k = alleles
-@guvectorize(  # type: ignore
-    [
-        "void(uint8[:, :], int32[:], uint8[:], int32[:,:])",
-        "void(uint8[:, :], int64[:], uint8[:], int32[:,:])",
-    ],
-    "(n, k),(n),(c)->(c,k)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(uint8[:, :], int32[:], uint8[:], int32[:,:])",
+#         "void(uint8[:, :], int64[:], uint8[:], int32[:,:])",
+#     ],
+#     "(n, k),(n),(c)->(c,k)",
+#     nopython=True,
+#     cache=True,
+# )
 def _count_cohort_alleles(
     ac: ArrayLike, cohorts: ArrayLike, _: ArrayLike, out: ArrayLike
 ) -> None:  # pragma: no cover

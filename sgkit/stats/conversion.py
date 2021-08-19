@@ -1,6 +1,6 @@
 import dask.array as da
 import numpy as np
-from numba import guvectorize
+#from numba import guvectorize
 from xarray import Dataset
 
 from sgkit import variables
@@ -8,15 +8,15 @@ from sgkit.typing import ArrayLike
 from sgkit.utils import conditional_merge_datasets, create_dataset
 
 
-@guvectorize(  # type: ignore
-    [
-        "void(float64[:], uint8[:], float64, int8[:])",
-        "void(float32[:], uint8[:], float64, int8[:])",
-    ],
-    "(p),(k),()->(k)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(float64[:], uint8[:], float64, int8[:])",
+#         "void(float32[:], uint8[:], float64, int8[:])",
+#     ],
+#     "(p),(k),()->(k)",
+#     nopython=True,
+#     cache=True,
+# )
 def _convert_probability_to_call(
     gp: ArrayLike, _: ArrayLike, threshold: float, out: ArrayLike
 ) -> None:  # pragma: no cover

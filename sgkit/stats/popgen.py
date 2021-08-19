@@ -4,7 +4,7 @@ from typing import Hashable, Optional, Sequence, Tuple, Union
 
 import dask.array as da
 import numpy as np
-from numba import guvectorize
+# from numba import guvectorize
 from xarray import Dataset
 
 from sgkit.cohorts import _cohorts_to_array
@@ -132,9 +132,9 @@ def diversity(
 
 
 # c = cohorts, k = alleles
-@guvectorize(  # type: ignore
-    ["void(int64[:, :], float64[:,:])"], "(c, k)->(c,c)", nopython=True, cache=True
-)
+# @guvectorize(  # type: ignore
+#     ["void(int64[:, :], float64[:,:])"], "(c, k)->(c,c)", nopython=True, cache=True
+# )
 def _divergence(ac: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
     """Generalized U-function for computing divergence.
 
@@ -299,15 +299,15 @@ def divergence(
 
 
 # c = cohorts
-@guvectorize(  # type: ignore
-    [
-        "void(float32[:,:], float32[:,:])",
-        "void(float64[:,:], float64[:,:])",
-    ],
-    "(c,c)->(c,c)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(float32[:,:], float32[:,:])",
+#         "void(float64[:,:], float64[:,:])",
+#     ],
+#     "(c,c)->(c,c)",
+#     nopython=True,
+#     cache=True,
+# )
 def _Fst_Hudson(d: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
     """Generalized U-function for computing Fst using Hudson's estimator.
 
@@ -331,15 +331,15 @@ def _Fst_Hudson(d: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
 
 
 # c = cohorts
-@guvectorize(  # type: ignore
-    [
-        "void(float32[:,:], float32[:,:])",
-        "void(float64[:,:], float64[:,:])",
-    ],
-    "(c,c)->(c,c)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(float32[:,:], float32[:,:])",
+#         "void(float64[:,:], float64[:,:])",
+#     ],
+#     "(c,c)->(c,c)",
+#     nopython=True,
+#     cache=True,
+# )
 def _Fst_Nei(d: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
     """Generalized U-function for computing Fst using Nei's estimator.
 
@@ -615,12 +615,12 @@ def Tajimas_D(
 
 
 # c = cohorts
-@guvectorize(  # type: ignore
-    ["void(float32[:, :], float32[:,:,:])", "void(float64[:, :], float64[:,:,:])"],
-    "(c,c)->(c,c,c)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     ["void(float32[:, :], float32[:,:,:])", "void(float64[:, :], float64[:,:,:])"],
+#     "(c,c)->(c,c,c)",
+#     nopython=True,
+#     cache=True,
+# )
 def _pbs(t: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
     """Generalized U-function for computing PBS."""
     out[:, :, :] = np.nan  # (cohorts, cohorts, cohorts)
@@ -636,15 +636,15 @@ def _pbs(t: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
 
 
 # c = cohorts, ct = cohort_triples, i = index (size 3)
-@guvectorize(  # type: ignore
-    [
-        "void(float32[:, :], int32[:, :], float32[:,:,:])",
-        "void(float64[:, :], int32[:, :], float64[:,:,:])",
-    ],
-    "(c,c),(ct,i)->(c,c,c)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(float32[:, :], int32[:, :], float32[:,:,:])",
+#         "void(float64[:, :], int32[:, :], float64[:,:,:])",
+#     ],
+#     "(c,c),(ct,i)->(c,c,c)",
+#     nopython=True,
+#     cache=True,
+# )
 def _pbs_cohorts(
     t: ArrayLike, ct: ArrayLike, out: ArrayLike
 ) -> None:  # pragma: no cover
@@ -939,15 +939,15 @@ def Garud_H(
     return conditional_merge_datasets(ds, new_ds, merge)
 
 
-@guvectorize(  # type: ignore
-    [
-        "void(float64[:], int32[:], uint8[:], float64[:])",
-        "void(float64[:], int64[:], uint8[:], float64[:])",
-    ],
-    "(n),(n),(c)->(c)",
-    nopython=True,
-    cache=True,
-)
+# @guvectorize(  # type: ignore
+#     [
+#         "void(float64[:], int32[:], uint8[:], float64[:])",
+#         "void(float64[:], int64[:], uint8[:], float64[:])",
+#     ],
+#     "(n),(n),(c)->(c)",
+#     nopython=True,
+#     cache=True,
+# )
 def _cohort_observed_heterozygosity(
     hi: ArrayLike, cohorts: ArrayLike, _: ArrayLike, out: ArrayLike
 ) -> None:  # pragma: no cover
