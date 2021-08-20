@@ -108,8 +108,8 @@ hardy_weinberg_p_value_jit = (
 
 
 def hardy_weinberg_p_value_vec(
-    obs_hets: NDArray[np.int_], obs_hom1: NDArray[np.int_], obs_hom2: NDArray[np.int_]
-) -> NDArray[np.float64]:
+    obs_hets: NDArray, obs_hom1: NDArray, obs_hom2: NDArray
+) -> NDArray:
     arrs = [obs_hets, obs_hom1, obs_hom2]
     if len(set(map(len, arrs))) != 1:
         raise ValueError("All arrays must have same length")

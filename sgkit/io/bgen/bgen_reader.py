@@ -94,7 +94,7 @@ class BgenReader:
         self.precision = 64 if self.dtype.itemsize >= 8 else 32
         self.ndim = 3
 
-    def __getitem__(self, idx: Any) -> NDArray[Any]:
+    def __getitem__(self, idx: Any) -> NDArray:
         if not isinstance(idx, tuple):
             raise IndexError(f"Indexer must be tuple (received {type(idx)})")
         if len(idx) != self.ndim:

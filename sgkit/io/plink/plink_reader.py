@@ -64,7 +64,7 @@ class BedReader(object):
         self.dtype = dtype
         self.ndim = 3
 
-    def __getitem__(self, idx: Tuple[Any, ...]) -> NDArray[Any]:
+    def __getitem__(self, idx: Tuple[Any, ...]) -> NDArray:
         if not isinstance(idx, tuple):
             raise IndexError(  # pragma: no cover
                 f"Indexer must be tuple (received {type(idx)})"
