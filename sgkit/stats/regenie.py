@@ -4,7 +4,8 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 from dask.array import Array
-from numpy.typing import NDArray
+# from numpy.typing import NDArray
+NDArray = Any
 from xarray import Dataset
 
 from .. import variables

@@ -7,7 +7,8 @@ import dask.dataframe as dd
 import numpy as np
 from bed_reader import open_bed
 from dask.dataframe import DataFrame
-from numpy.typing import NDArray
+# from numpy.typing import NDArray
+NDArray = Any
 from xarray import Dataset
 
 from sgkit import create_genotype_call_dataset

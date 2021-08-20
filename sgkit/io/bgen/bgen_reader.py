@@ -23,7 +23,8 @@ import pandas as pd
 import xarray as xr
 import zarr
 from cbgen import bgen_file, bgen_metafile
-from numpy.typing import NDArray
+#from numpy.typing import NDArray
+NDArray = Any
 from rechunker import api as rechunker_api
 from xarray import Dataset
 

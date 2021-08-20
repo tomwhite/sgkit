@@ -1,10 +1,11 @@
-from typing import Hashable, Optional
+from typing import Any, Hashable, Optional
 
 import dask.array as da
 import numpy as np
 
 # from numba import njit
-from numpy.typing import NDArray
+# from numpy.typing import NDArray
+NDArray = Any
 from xarray import Dataset
 
 from sgkit import variables
