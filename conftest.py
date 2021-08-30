@@ -15,3 +15,10 @@ def pytest_sessionfinish(session, exitstatus):  # type: ignore
         print(f)
         for var_list in var_lists:
             print(f"\t{var_list}")
+
+    import sgkit
+
+    missing = set(sgkit.__all__) - set(func_name_to_variable_lists.keys())
+    print("Missing:")
+    for f in sorted(missing):
+        print(f)

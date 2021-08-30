@@ -5,6 +5,8 @@ import numpy as np
 from numba import guvectorize
 from xarray import Dataset
 
+import sgkit
+
 from . import variables
 from .typing import ArrayLike, DType
 
@@ -198,6 +200,23 @@ def define_variable_if_absent(
 func_name_to_variable_lists = {}
 
 
+def get_api_function_name():
+    import inspect
+
+    api = set(sgkit.__all__) - set(["create_genotype_call_dataset"])
+
+    frame = inspect.currentframe().f_back
+    calling_fn = frame.f_code.co_name
+
+    while calling_fn not in api:
+        frame = frame.f_back
+        if frame is None:
+            return None
+        calling_fn = frame.f_code.co_name
+
+    return calling_fn
+
+
 def create_dataset(
     data_vars: Mapping[Hashable, Any] = None,  # type: ignore[assignment]
     coords: Mapping[Hashable, Any] = None,  # type: ignore[assignment]
@@ -223,14 +242,15 @@ def create_dataset(
     -------
     A new dataset.
     """
-    import inspect
 
-    calling_fn = inspect.currentframe().f_back.f_code.co_name
-    variable_list = func_name_to_variable_lists.get(calling_fn, [])
-    l = list(data_vars.keys())
-    if l not in variable_list:
-        variable_list.append(l)
-        func_name_to_variable_lists[calling_fn] = variable_list
+    calling_fn = get_api_function_name()
+
+    if calling_fn is not None:
+        variable_list = func_name_to_variable_lists.get(calling_fn, [])
+        l = list(data_vars.keys())
+        if l not in variable_list:
+            variable_list.append(l)
+            func_name_to_variable_lists[calling_fn] = variable_list
     ds = Dataset(data_vars, coords, attrs)
     ds = variables.annotate(ds)
     return ds
