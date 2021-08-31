@@ -102,6 +102,25 @@ class SgkitVariables:
         add_comment_attr: bool,
         *specs: Union[Spec, Mapping[Hashable, Spec], Hashable],
     ) -> xr.Dataset:
+        from sgkit.utils import get_api_function_name, func_name_to_input_variable_lists
+        calling_fn = get_api_function_name()
+        if calling_fn is not None:
+            variable_list = func_name_to_input_variable_lists.get(calling_fn, [])
+            l = []
+            for s in specs:
+                if isinstance(s, Spec):
+                    l.append(s.default_name)
+                elif isinstance(s, Mapping):
+                    l.extend(s.keys())
+                elif s:
+                    try:
+                        field_spec = cls.registered_variables[s]
+                        l.append(field_spec.default_name)
+                    except KeyError:
+                        pass
+            if l not in variable_list:
+                variable_list.append(l)
+                func_name_to_input_variable_lists[calling_fn] = variable_list
         if len(specs) == 0:
             specs = tuple(xr_dataset.variables.keys())
             logger.debug(f"No specs provided, will validate all variables: {specs}")

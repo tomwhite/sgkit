@@ -8,17 +8,29 @@ def pytest_configure(config) -> None:  # type: ignore
 
 
 def pytest_sessionfinish(session, exitstatus):  # type: ignore
-    print("Finish!")
-    from sgkit.utils import func_name_to_variable_lists
+    from sgkit.utils import func_name_to_input_variable_lists, func_name_to_output_variable_lists
 
-    for f, var_lists in dict(sorted(func_name_to_variable_lists.items())).items():
-        print(f)
+    print("Input variables")
+    print()
+    for func, var_lists in dict(sorted(func_name_to_input_variable_lists.items())).items():
+        print(f"\t{func}")
         for var_list in var_lists:
-            print(f"\t{var_list}")
+            print(f"\t\t{var_list}")
+    print()
+
+    print("Output variables")
+    print()
+    for func, var_lists in dict(sorted(func_name_to_output_variable_lists.items())).items():
+        print(f"\t{func}")
+        for var_list in var_lists:
+            print(f"\t\t{var_list}")
+    print()
 
     import sgkit
 
-    missing = set(sgkit.__all__) - set(func_name_to_variable_lists.keys())
+    missing = set(sgkit.__all__) - set(func_name_to_output_variable_lists.keys())
     print("Missing:")
     for f in sorted(missing):
         print(f)
+        
+

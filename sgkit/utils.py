@@ -197,7 +197,8 @@ def define_variable_if_absent(
     return func(ds)
 
 
-func_name_to_variable_lists = {}
+func_name_to_input_variable_lists = {}
+func_name_to_output_variable_lists = {}
 
 
 def get_api_function_name():
@@ -246,11 +247,11 @@ def create_dataset(
     calling_fn = get_api_function_name()
 
     if calling_fn is not None:
-        variable_list = func_name_to_variable_lists.get(calling_fn, [])
+        variable_list = func_name_to_output_variable_lists.get(calling_fn, [])
         l = list(data_vars.keys())
         if l not in variable_list:
             variable_list.append(l)
-            func_name_to_variable_lists[calling_fn] = variable_list
+            func_name_to_output_variable_lists[calling_fn] = variable_list
     ds = Dataset(data_vars, coords, attrs)
     ds = variables.annotate(ds)
     return ds
