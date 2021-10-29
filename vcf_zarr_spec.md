@@ -59,12 +59,10 @@ Missing values indicate the value is absent, and fill values are used to pad var
 |-----------|------------|---------------|
 | `int32`   | 0x80000000 | 0x80000001    |
 | `float32` | 0x7F800001 | 0x7F800002    |
-| `char`    | "."        | 0x00          |
-| `str`     | ""        | 0x00          |
+| `char`    | "."        | ""            |
+| `str`     | "."        | ""            |
 
 There is no need for missing or fill values for the `bool` dtype, since Type=Flag fields can only appear in INFO fields, and they always have Number=0. Similarly, the only place where the `int` dtype is used that can have missing or fill values is in the `GT` field which defines custom values in this case. 
-
-Note that the null character (0x00) is disallowed in VCF so it is safe to use it as the fill value for `str`.
 
 ### Array dimension names
 
