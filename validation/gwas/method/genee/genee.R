@@ -25,6 +25,7 @@ load("data/glist.hg19.rda")
 
 write.csv(mydata, "data/Real_Data_Example/mydata.csv")
 write.csv(ld, "data/Real_Data_Example/ld.csv")
+write.csv(glist.hg19, "data/glist.hg19.csv")
 
 # Write gene list to text file
 all_chr=as.numeric(mydata[,1])
