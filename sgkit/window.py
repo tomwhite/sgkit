@@ -99,6 +99,7 @@ def window_by_position(
     variant_contig: Hashable = variables.variant_contig,
     variant_position: Hashable = variables.variant_position,
     window_start_position: Optional[Hashable] = None,
+    window_stop_position: Optional[Hashable] = None,
     merge: bool = True,
 ) -> Dataset:
     """Add window information to a dataset, measured by distance along the genome.
@@ -203,6 +204,9 @@ def window_by_position(
     window_start_positions = (
         ds[window_start_position].values if window_start_position is not None else None
     )
+    window_stop_positions = (
+        ds[window_stop_position].values if window_stop_position is not None else None
+    )
     return _window_per_contig(
         ds,
         variant_contig,
@@ -212,7 +216,39 @@ def window_by_position(
         offset,
         positions,
         window_start_positions,
+        window_stop_positions,
     )
+
+def window_by_gene(
+    ds: Dataset,
+    *,
+    variant_contig: Hashable = variables.variant_contig,
+    variant_position: Hashable = variables.variant_position,
+    merge: bool = True,
+) -> Dataset:
+    gene_contig = ds["gene_contig_name"].values
+    gene_start = ds["gene_start"].values
+    gene_stop = ds["gene_stop"].values
+
+    # TODO: review this
+    # Change to 1-based (sgkit's convention)
+    # gene_start += 1
+    # gene_stop += 1
+
+    pos = ds[variant_position].values
+
+    # TODO: generalise for >1 contig
+    contig = 22
+    def f(start, stop, pos):
+        positions = pos[start:stop]
+        starts, stops = _get_windows_by_position_per_contig(
+            positions,
+            gene_start[gene_contig == contig],
+            gene_stop[gene_contig == contig],
+        )
+        return starts + start, stops + start
+
+    return _window_per_contig(ds, variant_contig, merge, f, pos)
 
 
 def _window_per_contig(
@@ -280,6 +316,7 @@ def _get_windows_by_position(
     offset: int,
     positions: ArrayLike,
     window_start_positions: Optional[ArrayLike],
+    window_stop_positions: Optional[ArrayLike],
 ) -> Tuple[ArrayLike, ArrayLike]:
     contig_pos = positions[start:stop]
     if window_start_positions is None:
@@ -287,12 +324,17 @@ def _get_windows_by_position(
         pos_starts = np.arange(offset, contig_pos[-1] + offset, step=size)
         window_starts = np.searchsorted(contig_pos, pos_starts) + start
         window_stops = np.searchsorted(contig_pos, pos_starts + size) + start
-    else:
+    elif window_stop_positions is None:
         window_start_pos = window_start_positions[start:stop]
         window_starts = np.searchsorted(contig_pos, window_start_pos + offset) + start
         window_stops = (
             np.searchsorted(contig_pos, window_start_pos + offset + size) + start
         )
+    else:
+        window_start_pos = window_start_positions[start:stop]
+        window_stop_pos = window_stop_positions[start:stop]
+        window_starts = np.searchsorted(contig_pos, window_start_pos + offset) + start
+        window_stops = np.searchsorted(contig_pos, window_stop_pos + offset) + start
     return window_starts, window_stops
 
 
