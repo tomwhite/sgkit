@@ -219,16 +219,19 @@ def window_by_position(
         window_stop_positions,
     )
 
+
 def window_by_gene(
     ds: Dataset,
     *,
     variant_contig: Hashable = variables.variant_contig,
     variant_position: Hashable = variables.variant_position,
+    lower: Optional[int] = 50000,
+    upper: Optional[int] = 50000,
     merge: bool = True,
 ) -> Dataset:
     gene_contig = ds["gene_contig_name"].values
-    gene_start = ds["gene_start"].values
-    gene_stop = ds["gene_stop"].values
+    gene_start = ds["gene_start"].values - lower
+    gene_stop = ds["gene_stop"].values + upper
 
     # TODO: review this
     # Change to 1-based (sgkit's convention)
@@ -238,7 +241,8 @@ def window_by_gene(
     pos = ds[variant_position].values
 
     # TODO: generalise for >1 contig
-    contig = 22
+    contig = "22"
+
     def f(start, stop, pos):
         positions = pos[start:stop]
         starts, stops = _get_windows_by_position_per_contig(
@@ -249,6 +253,16 @@ def window_by_gene(
         return starts + start, stops + start
 
     return _window_per_contig(ds, variant_contig, merge, f, pos)
+
+
+def _get_windows_by_position_per_contig(
+    positions: ArrayLike, pos_starts: ArrayLike, pos_stops: ArrayLike
+) -> Tuple[ArrayLike, ArrayLike]:
+    # TODO: check positions is monotonically increasing
+    window_starts = np.searchsorted(positions, pos_starts)
+    window_stops = np.searchsorted(positions, pos_stops)
+    non_empty_windows = window_starts != window_stops
+    return window_starts[non_empty_windows], window_stops[non_empty_windows]
 
 
 def _window_per_contig(
