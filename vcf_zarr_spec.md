@@ -41,8 +41,9 @@ This document uses the following shorthand notation to refer to Zarr data types 
 | Shorthand | Zarr dtypes    |
 |-----------|----------------|
 | `bool`    | `\|b1`         |
-| `int`     | `<i1`, `<i2`, `<i4` or `>i1`, `>i2`, `>i4` |
+| `int`     | `<i1`, `<i2`, `<i4`, `<i8` or `>i1`, `>i2`, `>i4`, `>i8` |
 | `int32`   | `<i4` or `>i4` |
+| `int64`   | `<i8` or `>i8` |
 | `float32` | `<f4` or `>f4` |
 | `char`    | `\|S1`         |
 | `str`     | `\|O`          |
@@ -90,7 +91,7 @@ The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `QUAL`, and `FILTER` are store
 | VCF field | Dtype     |
 |-----------|-----------|
 | `CHROM`   | `int`     |
-| `POS`     | `int32`   |
+| `POS`     | `int32` or `int64` |
 | `ID`      | `str`     |
 | `REF`     | `str`     |
 | `ALT`     | `str`     |
@@ -98,6 +99,8 @@ The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `QUAL`, and `FILTER` are store
 | `FILTER`  | `str`     |
 
 Each value in the `CHROM` array is an integer offset into the `contigs` attribute list.
+
+Usually `POS` uses `int32`, but `int64` can be used for cases when genome sizes exceed 32 bits.
 
 Missing values are allowed for `ID`, `ALT`, and `FILTER` (all "."), and for `QUAL` (represented by 0x7F800001).
 
