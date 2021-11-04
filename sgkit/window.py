@@ -350,10 +350,10 @@ def _get_windows_by_gene(
     gene_stop: ArrayLike,
 ) -> Tuple[ArrayLike, ArrayLike]:
     contig_pos = positions[start:stop]
-    window_starts = (
-        np.searchsorted(contig_pos, gene_start[gene_contig == contig]) + start
-    )
-    window_stops = np.searchsorted(contig_pos, gene_stop[gene_contig == contig]) + start
+    window_start_pos = gene_start[gene_contig == contig]
+    window_stop_pos = gene_stop[gene_contig == contig]
+    window_starts = np.searchsorted(contig_pos, window_start_pos) + start
+    window_stops = np.searchsorted(contig_pos, window_stop_pos) + start
     # TODO: remove this by allowing empty windows?
     non_empty_windows = window_starts != window_stops
     return window_starts[non_empty_windows], window_stops[non_empty_windows]
