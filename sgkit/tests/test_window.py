@@ -141,7 +141,7 @@ def test_window_by_variant__multiple_contigs(
     ],
 )
 def test_get_windows(start, stop, size, step, window_starts_exp, window_stops_exp):
-    window_starts, window_stops = _get_windows(start, stop, size, step)
+    window_starts, window_stops = _get_windows(None, start, stop, size, step)
     np.testing.assert_equal(window_starts, window_starts_exp)
     np.testing.assert_equal(window_stops, window_stops_exp)
 

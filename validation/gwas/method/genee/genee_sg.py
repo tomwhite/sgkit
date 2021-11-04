@@ -132,7 +132,7 @@ def genee_loop_chunk(
 def to_sgkit(mydata):
     variant_contig, variant_contig_names = encode_array(mydata.V1.to_numpy())
     variant_contig = variant_contig.astype("int16")
-    variant_contig_names = list(variant_contig_names)
+    variant_contig_names = [str(contig) for contig in variant_contig_names]
     variant_position = mydata.V3.to_numpy()
     variant_id = mydata.V2.to_numpy()
     variant_allele = np.array([["A"]] * len(variant_contig), dtype="S1")  # not used

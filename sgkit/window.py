@@ -240,10 +240,7 @@ def window_by_gene(
 
     pos = ds[variant_position].values
 
-    # TODO: generalise for >1 contig
-    contig = "22"
-
-    def f(start, stop, pos):
+    def f(contig, start, stop, pos):
         positions = pos[start:stop]
         starts, stops = _get_windows_by_position_per_contig(
             positions,
@@ -283,9 +280,9 @@ def _window_per_contig(
     contig_window_contigs = []
     contig_window_starts = []
     contig_window_stops = []
-    for i in range(n_contigs):
+    for i, contig in enumerate(ds.attrs["contigs"]):
         starts, stops = windowing_fn(
-            contig_bounds[i], contig_bounds[i + 1], *args, **kwargs
+            contig, contig_bounds[i], contig_bounds[i + 1], *args, **kwargs
         )
         contig_window_starts.append(starts)
         contig_window_stops.append(stops)
@@ -315,7 +312,7 @@ def _window_per_contig(
 
 
 def _get_windows(
-    start: int, stop: int, size: int, step: int
+    contig: str, start: int, stop: int, size: int, step: int
 ) -> Tuple[ArrayLike, ArrayLike]:
     # Find the indexes for the start positions of all windows
     window_starts = np.arange(start, stop, step)
@@ -324,6 +321,7 @@ def _get_windows(
 
 
 def _get_windows_by_position(
+    contig: str,
     start: int,
     stop: int,
     size: int,
@@ -380,7 +378,7 @@ def moving_statistic(
         raise ValueError(
             f"Minimum chunk size ({min_chunksize}) must not be smaller than size ({size})."
         )
-    window_starts, window_stops = _get_windows(0, length, size, step)
+    window_starts, window_stops = _get_windows(None, 0, length, size, step)
     return window_statistic(
         values, statistic, window_starts, window_stops, dtype, **kwargs
     )
