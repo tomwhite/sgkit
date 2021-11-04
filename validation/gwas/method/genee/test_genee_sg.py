@@ -6,6 +6,8 @@ import numpy.testing as npt
 import pandas as pd
 from genee_sg import genee_ols_sg, to_sgkit
 
+from sgkit.window import window_by_gene
+
 
 def test_simulated_data():
 
@@ -43,3 +45,35 @@ def test_simulated_data():
         expected[expected["pval"] > 1e-6]["pval"],
         rtol=0.04,
     )
+
+
+def test_real_data_gene_list():
+    data_dir = Path(__file__).parent / "data" / "Real_Data_Example"
+
+    mydata = pd.read_csv(data_dir / "mydata.csv", index_col=0)
+    glist_hg19 = pd.read_csv(
+        Path(__file__).parent / "data" / "glist.hg19.csv", index_col=0
+    )
+
+    with open(data_dir / "gene_list.txt") as f:
+        gene_list = [
+            [int(v) for v in line.rstrip().split(",")] for line in f.readlines()
+        ]
+
+    ds = to_sgkit(mydata)
+
+    ds["gene_contig_name"] = (["genes"], glist_hg19.V1.to_numpy())
+    ds["gene_start"] = (["genes"], glist_hg19.V2.to_numpy())
+    ds["gene_stop"] = (["genes"], glist_hg19.V3.to_numpy())
+    ds["gene_id"] = (["genes"], glist_hg19.V4.to_numpy())
+
+    ds2 = window_by_gene(ds)
+
+    window_start = ds2["window_start"].values.tolist()
+    window_stop = ds2["window_stop"].values.tolist()
+
+    gene_list_starts = [g[0] - 1 for g in gene_list]
+    gene_list_stops = [g[-1] for g in gene_list]
+
+    assert window_start == gene_list_starts
+    assert window_stop == gene_list_stops
