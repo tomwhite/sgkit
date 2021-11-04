@@ -238,28 +238,9 @@ def window_by_gene(
     # gene_start += 1
     # gene_stop += 1
 
-    pos = ds[variant_position].values
+    positions = ds[variant_position].values
 
-    def f(contig, start, stop, pos):
-        positions = pos[start:stop]
-        starts, stops = _get_windows_by_position_per_contig(
-            positions,
-            gene_start[gene_contig == contig],
-            gene_stop[gene_contig == contig],
-        )
-        return starts + start, stops + start
-
-    return _window_per_contig(ds, variant_contig, merge, f, pos)
-
-
-def _get_windows_by_position_per_contig(
-    positions: ArrayLike, pos_starts: ArrayLike, pos_stops: ArrayLike
-) -> Tuple[ArrayLike, ArrayLike]:
-    # TODO: check positions is monotonically increasing
-    window_starts = np.searchsorted(positions, pos_starts)
-    window_stops = np.searchsorted(positions, pos_stops)
-    non_empty_windows = window_starts != window_stops
-    return window_starts[non_empty_windows], window_stops[non_empty_windows]
+    return _window_per_contig(ds, variant_contig, merge, _get_windows_by_gene, positions, gene_contig, gene_start, gene_stop)
 
 
 def _window_per_contig(
@@ -348,6 +329,14 @@ def _get_windows_by_position(
         window_starts = np.searchsorted(contig_pos, window_start_pos + offset) + start
         window_stops = np.searchsorted(contig_pos, window_stop_pos + offset) + start
     return window_starts, window_stops
+
+
+def _get_windows_by_gene(contig, start, stop, positions, gene_contig, gene_start, gene_stop):
+    contig_pos = positions[start:stop]
+    window_starts = np.searchsorted(contig_pos, gene_start[gene_contig == contig])
+    window_stops = np.searchsorted(contig_pos, gene_stop[gene_contig == contig])
+    non_empty_windows = window_starts != window_stops
+    return window_starts[non_empty_windows] + start, window_stops[non_empty_windows] + start
 
 
 # Computing statistics for windows (internal code)
