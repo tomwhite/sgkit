@@ -240,7 +240,16 @@ def window_by_gene(
 
     positions = ds[variant_position].values
 
-    return _window_per_contig(ds, variant_contig, merge, _get_windows_by_gene, positions, gene_contig, gene_start, gene_stop)
+    return _window_per_contig(
+        ds,
+        variant_contig,
+        merge,
+        _get_windows_by_gene,
+        positions,
+        gene_contig,
+        gene_start,
+        gene_stop,
+    )
 
 
 def _window_per_contig(
@@ -331,12 +340,23 @@ def _get_windows_by_position(
     return window_starts, window_stops
 
 
-def _get_windows_by_gene(contig, start, stop, positions, gene_contig, gene_start, gene_stop):
+def _get_windows_by_gene(
+    contig: str,
+    start: int,
+    stop: int,
+    positions: ArrayLike,
+    gene_contig: ArrayLike,
+    gene_start: ArrayLike,
+    gene_stop: ArrayLike,
+) -> Tuple[ArrayLike, ArrayLike]:
     contig_pos = positions[start:stop]
-    window_starts = np.searchsorted(contig_pos, gene_start[gene_contig == contig])
-    window_stops = np.searchsorted(contig_pos, gene_stop[gene_contig == contig])
+    window_starts = (
+        np.searchsorted(contig_pos, gene_start[gene_contig == contig]) + start
+    )
+    window_stops = np.searchsorted(contig_pos, gene_stop[gene_contig == contig]) + start
+    # TODO: remove this by allowing empty windows?
     non_empty_windows = window_starts != window_stops
-    return window_starts[non_empty_windows] + start, window_stops[non_empty_windows] + start
+    return window_starts[non_empty_windows], window_stops[non_empty_windows]
 
 
 # Computing statistics for windows (internal code)
