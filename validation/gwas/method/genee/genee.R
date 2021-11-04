@@ -21,13 +21,25 @@ load("data/Real_Data_Example/Real_LD.RData")
 load("data/Real_Data_Example/Real_Summary_Statistics.RData")
 load("data/glist.hg19.rda")
 
-# TODO: run genee
+# We need to sort the gene list by position for sgkit
+glist.hg19.sorted = glist.hg19[with(glist.hg19, order(V2, V3)), ]
+
+all_chr=as.numeric(mydata[,1])
+all_pos=as.numeric(mydata[,3])
+temp = genee_list(glist.hg19.sorted, all_chr, all_pos, 50000, 50000)
+gene_info = temp[[1]]
+gene_list = temp[[2]]
+
+# use alpha = -1 for OLS
+result = genee(mydata, ld, alpha = -1, gene_list = gene_list)
 
 write.csv(mydata, "data/Real_Data_Example/mydata.csv")
 write.csv(ld, "data/Real_Data_Example/ld.csv")
+write.csv(result, "data/Real_Data_Example/result.csv")
 write.csv(glist.hg19, "data/glist.hg19.csv")
+write.csv(glist.hg19.sorted, "data/glist.hg19.sorted.csv")
 
-# Write gene list to text file
+# Write (original) gene list to text file
 all_chr=as.numeric(mydata[,1])
 all_pos=as.numeric(mydata[,3])
 temp = genee_list(glist.hg19, all_chr, all_pos, 50000, 50000)

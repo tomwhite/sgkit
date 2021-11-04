@@ -86,15 +86,9 @@ def test_real_data():
 
     mydata = pd.read_csv(data_dir / "mydata.csv", index_col=0)
     ld = pd.read_csv(data_dir / "ld.csv", index_col=0)
-    glist_hg19 = pd.read_csv(
-        Path(__file__).parent / "data" / "glist.hg19.csv", index_col=0
+    glist_hg19_sorted = pd.read_csv(
+        Path(__file__).parent / "data" / "glist.hg19.sorted.csv", index_col=0
     )
-
-    print(glist_hg19)
-
-    glist_hg19_sorted = glist_hg19.sort_values(by=["V2", "V3"])
-
-    print(glist_hg19_sorted)
 
     ds = to_sgkit(mydata)
 
@@ -108,7 +102,15 @@ def test_real_data():
 
     ds2 = window_by_gene(ds)
 
-    print(ds2)
-
     df = genee_ols_sg(ds2, ld).compute()
-    print(df)
+
+    expected = pd.read_csv(data_dir / "result.csv", index_col=0)
+    expected = expected.reset_index()
+
+    npt.assert_allclose(df["test_q"], expected["test_q"])
+    # npt.assert_allclose(df["q_var"], expected["q_var"], rtol=0.005)
+    # npt.assert_allclose(
+    #     df[df["pval"] > 1e-6]["pval"],
+    #     expected[expected["pval"] > 1e-6]["pval"],
+    #     rtol=0.04,
+    # )
