@@ -30,6 +30,7 @@ def genee_EM(betas):
     # based on https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm_selection.html#sphx-glr-auto-examples-mixture-plot-gmm-selection-py
     lowest_bic = np.infty
     for n_components in range(1, 10):
+        # setting reg_covar=0 makes results closer to R's mclust for real data, but makes it worse for simulated!
         gmm = GaussianMixture(n_components=n_components, random_state=0).fit(betas)
         bic = gmm.bic(betas)
         if bic < lowest_bic:

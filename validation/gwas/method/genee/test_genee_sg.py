@@ -108,7 +108,7 @@ def test_real_data():
     expected = expected.reset_index()
 
     npt.assert_allclose(df["test_q"], expected["test_q"])
-    # npt.assert_allclose(df["q_var"], expected["q_var"], rtol=0.005)
+    # npt.assert_allclose(df["q_var"], expected["q_var"], rtol=0.07)
     # npt.assert_allclose(
     #     df[df["pval"] > 1e-6]["pval"],
     #     expected[expected["pval"] > 1e-6]["pval"],
