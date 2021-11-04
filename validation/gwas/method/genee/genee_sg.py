@@ -1,18 +1,17 @@
 # type: ignore
 import sys
 from pathlib import Path
-from re import M
 
+import dask.array as da
 import numpy as np
 import pandas as pd
 from chiscore import liu_sf
 from sklearn.mixture import GaussianMixture
 
 sys.path.append("/Users/tom/workspace/sgkit")
-import sgkit as sg
 from sgkit.model import create_genotype_call_dataset
+from sgkit.stats.ld import map_windows_as_dataframe
 from sgkit.utils import encode_array
-from sgkit.window import window_by_gene
 
 
 def genee_ols(betas_ols, ld, prior_weight, gene_list):
@@ -53,7 +52,7 @@ def genee_loop(betas, ld, epsilon_effect, prior_weight, gene_list):
 
 
 def genee_test(gene, ld, betas, epsilon_effect, prior_weight):
-    ld_g = ld.iloc[gene, gene].to_numpy()
+    ld_g = ld[gene, gene]
     # TODO: prior weights
     # weight_matrix = np.diag(prior_weight[gene])
     # x = (ld_g * epsilon_effect) @ weight_matrix
@@ -78,21 +77,36 @@ def genee_ols_sg(ds, ld):
     betas = np.expand_dims(ds["beta"].values, 1)
     epsilon_effect = genee_EM(betas=betas)
 
-    # TODO: this is more complicated with multiple chunks!
-    chunk_window_starts = ds["window_start"].values
-    chunk_window_stops = ds["window_stop"].values
-    rows = genee_loop_chunk(
-        betas, ld, epsilon_effect, chunk_window_starts, chunk_window_stops
+    betas = da.asarray(betas)
+    ld = da.asarray(ld)
+
+    meta = [
+        ("test_q", np.float32),
+        ("q_var", np.float32),
+        ("pval", np.float32),
+    ]
+    return map_windows_as_dataframe(
+        genee_loop_chunk,
+        betas,
+        ld,
+        window_starts=ds["window_start"].values,
+        window_stops=ds["window_stop"].values,
+        meta=meta,
+        epsilon_effect=epsilon_effect,
     )
-    # TODO: need to integrate dask delayed data frames
-    return rows
 
 
 def genee_loop_chunk(
-    betas, ld, epsilon_effect, chunk_window_starts, chunk_window_stops
+    args,
+    chunk_window_starts,
+    chunk_window_stops,
+    abs_chunk_start,
+    chunk_max_window_start,
+    epsilon_effect,
 ):
     # Iterate over each window in this chunk
     # Note that betas and ld are just the chunked versions here
+    betas, ld = args
     rows = list()
     for ti in range(len(chunk_window_starts)):
         window_start = chunk_window_starts[ti]
@@ -102,7 +116,15 @@ def genee_loop_chunk(
                 slice(window_start, window_stop), ld, betas, epsilon_effect, None
             )
         )
-    return rows
+    cols = [
+        ("test_q", np.float32),
+        ("q_var", np.float32),
+        ("pval", np.float32),
+    ]
+    df = pd.DataFrame(rows, columns=[c[0] for c in cols])
+    for k, v in dict(cols).items():
+        df[k] = df[k].astype(v)
+    return df
 
 
 def to_sgkit(mydata):
@@ -144,10 +166,14 @@ if __name__ == "__main__":
     ds = to_sgkit(mydata)
     print(ds)
 
+    # turn ld into an array
+    ld = ld.to_numpy()
+
     # genes are windows in this simple example
     ds["window_contig"] = (["windows"], np.full(len(gene_start), 0))
     ds["window_start"] = (["windows"], gene_start)
     ds["window_stop"] = (["windows"], gene_stop)
     print(ds)
 
-    print(genee_ols_sg(ds, ld))
+    df = genee_ols_sg(ds, ld).compute()
+    print(df)
