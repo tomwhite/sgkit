@@ -67,6 +67,7 @@ def genee_test(gene, ld, betas, epsilon_effect, prior_weight):
         test_statsics, e_values, np.ones(len(e_values)), np.zeros(len(e_values))
     )
     p_value_g = q
+    p_value_g = np.real_if_close(p_value_g)
     if p_value_g <= 0.0:
         p_value_g = 1e-20
 

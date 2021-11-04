@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
+import pytest
 from genee_sg import genee_ols_sg, to_sgkit
 
 from sgkit.window import window_by_gene
@@ -77,3 +78,37 @@ def test_real_data_gene_list():
 
     assert window_start == gene_list_starts
     assert window_stop == gene_list_stops
+
+
+@pytest.mark.filterwarnings("ignore::numpy.ComplexWarning")
+def test_real_data():
+    data_dir = Path(__file__).parent / "data" / "Real_Data_Example"
+
+    mydata = pd.read_csv(data_dir / "mydata.csv", index_col=0)
+    ld = pd.read_csv(data_dir / "ld.csv", index_col=0)
+    glist_hg19 = pd.read_csv(
+        Path(__file__).parent / "data" / "glist.hg19.csv", index_col=0
+    )
+
+    print(glist_hg19)
+
+    glist_hg19_sorted = glist_hg19.sort_values(by=["V2", "V3"])
+
+    print(glist_hg19_sorted)
+
+    ds = to_sgkit(mydata)
+
+    # turn ld into an array
+    ld = ld.to_numpy()
+
+    ds["gene_contig_name"] = (["genes"], glist_hg19_sorted.V1.to_numpy())
+    ds["gene_start"] = (["genes"], glist_hg19_sorted.V2.to_numpy())
+    ds["gene_stop"] = (["genes"], glist_hg19_sorted.V3.to_numpy())
+    ds["gene_id"] = (["genes"], glist_hg19_sorted.V4.to_numpy())
+
+    ds2 = window_by_gene(ds)
+
+    print(ds2)
+
+    df = genee_ols_sg(ds2, ld).compute()
+    print(df)
