@@ -54,6 +54,7 @@ def genee_loop(betas, ld, epsilon_effect, prior_weight, gene_list):
 
 def genee_test(gene, ld, betas, epsilon_effect, prior_weight):
     ld_g = ld.iloc[gene, gene].to_numpy()
+    # TODO: prior weights
     # weight_matrix = np.diag(prior_weight[gene])
     # x = (ld_g * epsilon_effect) @ weight_matrix
     x = ld_g * epsilon_effect
@@ -91,6 +92,7 @@ def genee_loop_chunk(
     betas, ld, epsilon_effect, chunk_window_starts, chunk_window_stops
 ):
     # Iterate over each window in this chunk
+    # Note that betas and ld are just the chunked versions here
     rows = list()
     for ti in range(len(chunk_window_starts)):
         window_start = chunk_window_starts[ti]
