@@ -108,9 +108,15 @@ def test_real_data():
     expected = expected.reset_index()
 
     npt.assert_allclose(df["test_q"], expected["test_q"])
+    # The following only pass if reg_covar=0
     # npt.assert_allclose(df["q_var"], expected["q_var"], rtol=0.07)
+    # npt.assert_allclose(-np.log10(df["pval"]), -np.log10(expected["pval"]), atol=1.0) # 1 order of mag for p-val
+
     # npt.assert_allclose(
     #     df[df["pval"] > 1e-6]["pval"],
     #     expected[expected["pval"] > 1e-6]["pval"],
     #     rtol=0.04,
     # )
+    # print (df["pval"] < 1e-6)
+    # print (expected["pval"] < 1e-6)
+    # npt.assert_allclose(df["pval"] < 1e-6, expected["pval"] < 1e-6)
