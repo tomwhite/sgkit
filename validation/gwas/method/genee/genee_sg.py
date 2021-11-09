@@ -75,6 +75,23 @@ def genee_test(gene, ld, betas, epsilon_effect, prior_weight):
     return test_statsics.squeeze().item(), t_var, p_value_g.squeeze().item()
 
 
+def genee_test2(ld_g, betas_g, epsilon_effect):
+    x = ld_g * epsilon_effect
+    e_values = np.linalg.eigvals(x)
+
+    test_statsics = betas_g.T @ betas_g
+    t_var = np.diag((ld_g * epsilon_effect) @ (ld_g * epsilon_effect)).sum()
+
+    (q, _, _, _) = liu_sf(
+        test_statsics, e_values, np.ones(len(e_values)), np.zeros(len(e_values))
+    )
+    p_value_g = q
+    p_value_g = np.real_if_close(p_value_g)
+    if p_value_g <= 0.0:
+        p_value_g = 1e-20
+
+    return test_statsics.squeeze().item(), t_var, p_value_g.squeeze().item()
+
 def genee_ols_sg(ds, ld):
     betas = np.expand_dims(ds["beta"].values, 1)
     epsilon_effect = genee_EM(betas=betas)
