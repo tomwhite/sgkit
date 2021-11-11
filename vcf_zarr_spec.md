@@ -36,17 +36,15 @@ Each VCF field is stored in a separate Zarr array. This specification only manda
 
 ### Zarr dtypes
 
-This document uses the following shorthand notation to refer to Zarr data types (dtypes):
+This document uses a shorthand notation to refer to Zarr data types (dtypes). The following table shows the mapping to VCF types.
 
-| Shorthand | Zarr dtypes    |
-|-----------|----------------|
-| `bool`    | `\|b1`         |
-| `int`     | `<i1`, `<i2`, `<i4`, `<i8` or `>i1`, `>i2`, `>i4`, `>i8` |
-| `int32`   | `<i4` or `>i4` |
-| `int64`   | `<i8` or `>i8` |
-| `float32` | `<f4` or `>f4` |
-| `char`    | `\|S1`         |
-| `str`     | `\|O`          |
+| Shorthand | Zarr dtypes    | VCF Type  |
+|-----------|----------------|-----------|
+| `bool`    | `\|b1`         | Flag      |
+| `int`     | `<i1`, `<i2`, `<i4`, `<i8` or `>i1`, `>i2`, `>i4`, `>i8` | Integer   |
+| `float`   | `<f4`, `<f8` or `>f4`, `>f8` | Float     |
+| `char`    | `\|S1`         | Character |
+| `str`     | `\|O`          | String    |
 
 This specification does not mandate a byte order for numeric types: little-endian (e.g. `<i4`) or big-endian (`>i4`) are both permitted.
 
@@ -54,16 +52,16 @@ The `str` dtype is used to represent [variable-length strings](https://zarr.read
 
 ### Missing and fill values
 
-Missing values indicate the value is absent, and fill values are used to pad variable length fields. The following are based on the values used in BCF. Note that the BCF specification refers to fill values as "END_OF_VECTOR" values.
+Missing values indicate the value is absent, and fill values are used to pad variable length fields. The following float values are based on the "signalling NaN" values used in BCF. Note that the BCF specification refers to fill values as "END_OF_VECTOR" values.
 
 | Dtype     | Missing    | Fill          |
 |-----------|------------|---------------|
-| `int32`   | 0x80000000 | 0x80000001    |
-| `float32` | 0x7F800001 | 0x7F800002    |
+| `int  `   | -1         | -2            |
+| `float  ` | NaN (0x7F800001 32-bit, 0x7FF8000000000001 64-bit) | NaN (0x7F800002 32-bit, 0x7FF0000000000002 64-bit)    |
 | `char`    | "."        | ""            |
 | `str`     | "."        | ""            |
 
-There is no need for missing or fill values for the `bool` dtype, since Type=Flag fields can only appear in INFO fields, and they always have Number=0. Similarly, the only place where the `int` dtype is used that can have missing or fill values is in the `GT` field which defines custom values in this case. 
+There is no need for missing or fill values for the `bool` dtype, since Type=Flag fields can only appear in INFO fields, and they always have Number=0.
 
 ### Array dimension names
 
@@ -88,43 +86,31 @@ For fixed-size Number fields (e.g. Number=2) or unknown (Number=.), the dimensio
 
 The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `QUAL`, and `FILTER` are stored as one-dimensional Zarr arrays at paths corresponding to the field name, each with shape `(variants)`, and dimension names `[variants]`. The `ALT` field is stored as a two-dimensional Zarr array at a path with name `ALT`, of shape `(variants, alt_alleles)`, and dimension names `[variants, alt_alleles]`. The dtype for each field is as follows:
 
-| VCF field | Dtype     |
-|-----------|-----------|
-| `CHROM`   | `int`     |
-| `POS`     | `int32` or `int64` |
-| `ID`      | `str`     |
-| `REF`     | `str`     |
-| `ALT`     | `str`     |
-| `QUAL`    | `float32` |
-| `FILTER`  | `str`     |
+| VCF field | Dtype   |
+|-----------|---------|
+| `CHROM`   | `int`   |
+| `POS`     | `int`   |
+| `ID`      | `str`   |
+| `REF`     | `str`   |
+| `ALT`     | `str`   |
+| `QUAL`    | `float` |
+| `FILTER`  | `str`   |
 
 Each value in the `CHROM` array is an integer offset into the `contigs` attribute list.
-
-Usually `POS` uses `int32`, but `int64` can be used for cases when genome sizes exceed 32 bits.
-
-Missing values are allowed for `ID`, `ALT`, and `FILTER` (all "."), and for `QUAL` (represented by 0x7F800001).
 
 TODO: should we add a combined REF_ALT field that is of shape `(variants, alleles)`? 
 
 ### INFO fields
 
-Each INFO field is stored as a two-dimensional Zarr array at a path with name `INFO_<field>`, of shape `(variants, <Number>)`, dimension names `[variants, <Number dimension name>]`, and with dtype determined by the following VCF Type field mapping:
+Each INFO field is stored as a two-dimensional Zarr array at a path with name `INFO_<field>`, of shape `(variants, <Number>)`, dimension names `[variants, <Number dimension name>]`.
 
-| VCF Type  | Dtype     |
-|-----------|-----------|
-| Integer   | `int32`   |
-| Float     | `float32` |
-| Flag      | `bool`    |
-| Character | `char`    |
-| String    | `str`     |
-
-Missing and fill values are encoded as described above.
+Dtypes, and missing and fill values are encoded as described above.
 
 ### FORMAT fields
 
-Each FORMAT field is stored as a three-dimensional Zarr array at a path with name `FORMAT_<field>`, of shape `(variants, samples, <Number>)`, dimension names `[variants, samples, <Number dimension name>]`, and with dtype determined by the same VCF Type field mapping for INFO fields, except for Flag, which is not permitted in FORMAT fields.
+Each FORMAT field is stored as a three-dimensional Zarr array at a path with name `FORMAT_<field>`, of shape `(variants, samples, <Number>)`, dimension names `[variants, samples, <Number dimension name>]`.
 
-Missing and fill values are encoded as described above.
+Dtypes, and missing and fill values are encoded as described above.
 
 A **Genotype (GT) field** is stored as a three-dimensional Zarr array at a path with name `FORMAT_GT`, of shape `(variants, samples, ploidy)`, with an `int` dtype. Values encode the allele, with 0 for REF, 1 for the first alternate non-reference allele, and so on. A value of -1 indicates missing, and -2 indicates fill in mixed-ploidy datasets.
 
