@@ -22,13 +22,10 @@ The VCF Zarr store contains the following mandatory attributes:
 | Key          | Value |
 |--------------|-------|
 | `fileformat` | `VCFZARRv0.1` |
-| `header`     | The VCF header from `##fileformat` to `#CHROM` inclusive, stored as a single string. |
+| `vcf_header`     | The VCF header from `##fileformat` to `#CHROM` inclusive, stored as a single string. |
 | `contigs`    | A list of strings of the contig IDs in the same order as specified in the header. |
 
-TODO: would vcf_header or raw_header or raw_vcf_header be a better name?
-
-The `contigs` attribute plays the same role as the dictionary of contigs in BCF, providing a way of encoding a contig (in the `CHROM` array)
-with an integer offset into the `contigs` list.
+The `contigs` attribute plays the same role as the dictionary of contigs in BCF, providing a way of encoding a contig (in the `variant_contig` array) with an integer offset into the `contigs` list.
 
 ## VCF Zarr arrays
 
@@ -63,6 +60,10 @@ Missing values indicate the value is absent, and fill values are used to pad var
 
 There is no need for missing or fill values for the `bool` dtype, since Type=Flag fields can only appear in INFO fields, and they always have Number=0.
 
+In addition to encoding the missing and fill status in the values, some implementations may choose to store this information in accompanying Zarr arrays of the same shape. This make masking out missing data easier for the user, since they don't have to know how missing and fill values are encoded for each type.
+
+An array called `<name>` may have an accompanying array called `<name>_mask` with dtype `bool`, where true values indicate that the corresponding values are missing or fill values, and should be masked out. There may also be an accompanying array called `<name>_fill` with dtype `bool`, where true values indicate that the corresponding values are fill values.
+
 ### Array dimension names
 
 Following [Xarray conventions](http://xarray.pydata.org/en/stable/internals/zarr-encoding-spec.html), each Zarr array has an attribute `_ARRAY_DIMENSIONS`, which is a list of strings naming the dimensions.
@@ -84,37 +85,30 @@ For fixed-size Number fields (e.g. Number=2) or unknown (Number=.), the dimensio
 
 ### Fixed fields
 
-The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `QUAL`, and `FILTER` are stored as one-dimensional Zarr arrays at paths corresponding to the field name, each with shape `(variants)`, and dimension names `[variants]`. The `ALT` field is stored as a two-dimensional Zarr array at a path with name `ALT`, of shape `(variants, alt_alleles)`, and dimension names `[variants, alt_alleles]`. The dtype for each field is as follows:
+The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `ALT`, `QUAL`, and `FILTER` are stored as Zarr arrays according to the following table. Note that the `REF` and `ALT` fields are combined into a single Zarr array.
 
-| VCF field | Dtype   |
-|-----------|---------|
-| `CHROM`   | `int`   |
-| `POS`     | `int`   |
-| `ID`      | `str`   |
-| `REF`     | `str`   |
-| `ALT`     | `str`   |
-| `QUAL`    | `float` |
-| `FILTER`  | `str`   |
+| VCF field(s) | Zarr array path    | Shape                 | Dimension names       | Dtype   |
+|--------------|--------------------|-----------------------|-----------------------|---------|
+| `CHROM`      | `variant_contig`   | `(variants)`          | `[variants]`          | `int`   |
+| `POS`        | `variant_position` | `(variants)`          | `[variants]`          | `int`   |
+| `ID`         | `variant_id`       | `(variants)`          | `[variants]`          | `str`   |
+| `REF`, `ALT` | `variant_allele`   | `(variants, alleles)` | `[variants, alleles]` | `str`   |
+| `QUAL`       | `variant_quality`  | `(variants)`          | `[variants]`          | `float` |
+| `FILTER`     | `variant_filter`   | `(variants)`          | `[variants]`          | `str`   |
 
-Each value in the `CHROM` array is an integer offset into the `contigs` attribute list.
-
-TODO: should we add a combined REF_ALT field that is of shape `(variants, alleles)`? 
+Each value in the `variant_contig` array is an integer offset into the `contigs` attribute list.
 
 ### INFO fields
 
-Each INFO field is stored as a two-dimensional Zarr array at a path with name `INFO_<field>`, of shape `(variants, <Number>)`, dimension names `[variants, <Number dimension name>]`.
-
-Dtypes, and missing and fill values are encoded as described above.
+Each INFO field is stored as a two-dimensional Zarr array at a path with name `variant_<field>`, of shape `(variants, <Number>)`, dimension names `[variants, <Number dimension name>]`. Dtypes, and missing and fill values are encoded as described above.
 
 ### FORMAT fields
 
-Each FORMAT field is stored as a three-dimensional Zarr array at a path with name `FORMAT_<field>`, of shape `(variants, samples, <Number>)`, dimension names `[variants, samples, <Number dimension name>]`.
+Each FORMAT field is stored as a three-dimensional Zarr array at a path with name `call_<field>`, of shape `(variants, samples, <Number>)`, dimension names `[variants, samples, <Number dimension name>]`. Dtypes, and missing and fill values are encoded as described above.
 
-Dtypes, and missing and fill values are encoded as described above.
+A **Genotype (GT) field** is stored as a three-dimensional Zarr array at a path with name `call_genotype`, of shape `(variants, samples, ploidy)`, with an `int` dtype. Values encode the allele, with 0 for REF, 1 for the first alternate non-reference allele, and so on. A value of -1 indicates missing, and -2 indicates fill in mixed-ploidy datasets.
 
-A **Genotype (GT) field** is stored as a three-dimensional Zarr array at a path with name `FORMAT_GT`, of shape `(variants, samples, ploidy)`, with an `int` dtype. Values encode the allele, with 0 for REF, 1 for the first alternate non-reference allele, and so on. A value of -1 indicates missing, and -2 indicates fill in mixed-ploidy datasets.
-
-To indicate phasing, there is an accompanying Zarr array at a path with name `FORMAT_GT_phased`, of shape `(variants, samples)`, with dtype `bool`. Values are true if a call is phased, false if unphased (or not present).
+To indicate phasing, there is an accompanying Zarr array at a path with name `call_genotype_phased`, of shape `(variants, samples)`, with dtype `bool`. Values are true if a call is phased, false if unphased (or not present).
 
 ### Sample information
 
