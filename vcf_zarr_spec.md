@@ -108,7 +108,7 @@ Each FORMAT field is stored as a three-dimensional Zarr array at a path with nam
 
 A **Genotype (GT) field** is stored as a three-dimensional Zarr array at a path with name `call_genotype`, of shape `(variants, samples, ploidy)`, with an `int` dtype. Values encode the allele, with 0 for REF, 1 for the first alternate non-reference allele, and so on. A value of -1 indicates missing, and -2 indicates fill in mixed-ploidy datasets.
 
-To indicate phasing, there is an accompanying Zarr array at a path with name `call_genotype_phased`, of shape `(variants, samples)`, with dtype `bool`. Values are true if a call is phased, false if unphased (or not present).
+To indicate phasing, there is an optional accompanying Zarr array at a path with name `call_genotype_phased`, of shape `(variants, samples)`, with dtype `bool`. Values are true if a call is phased, false if unphased (or not present). If the array is not present then all calls are unphased.
 
 ### Sample information
 
