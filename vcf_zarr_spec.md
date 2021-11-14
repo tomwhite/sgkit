@@ -1,5 +1,7 @@
 # VCF Zarr specification
 
+***Version 0.1***
+
 This document is a technical specification for VCF Zarr, an equivalent of VCF that uses Zarr storage.
 
 This specification depends on definitions and terminology from [The Variant Call Format Specification, VCFv4.3 and BCFv2.2](https://samtools.github.io/hts-specs/VCFv4.3.pdf),
@@ -19,11 +21,11 @@ and VCF fields and sample information stored as Zarr arrays.
 
 The VCF Zarr store contains the following mandatory attributes:
 
-| Key          | Value |
-|--------------|-------|
-| `fileformat` | `VCFZARRv0.1` |
-| `vcf_header`     | The VCF header from `##fileformat` to `#CHROM` inclusive, stored as a single string. |
-| `contigs`    | A list of strings of the contig IDs in the same order as specified in the header. |
+| Key                | Value                                                                                |
+|--------------------|--------------------------------------------------------------------------------------|
+| `vcf_zarr_version` | `0.1`                                                                                |
+| `vcf_header`       | The VCF header from `##fileformat` to `#CHROM` inclusive, stored as a single string. |
+| `contigs`          | A list of strings of the contig IDs in the same order as specified in the header.    |
 
 The `contigs` attribute plays the same role as the dictionary of contigs in BCF, providing a way of encoding a contig (in the `variant_contig` array) with an integer offset into the `contigs` list.
 
