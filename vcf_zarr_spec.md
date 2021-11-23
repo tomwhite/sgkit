@@ -26,6 +26,7 @@ The VCF Zarr store contains the following mandatory attributes:
 | `vcf_zarr_version` | `0.1`                                                                                |
 | `vcf_header`       | The VCF header from `##fileformat` to `#CHROM` inclusive, stored as a single string. |
 | `contigs`          | A list of strings of the contig IDs in the same order as specified in the header.    |
+| `filters`          | A list of strings of the filters in the same order as specified in the header, except for `PASS`, which is always first. |
 
 The `contigs` attribute plays the same role as the dictionary of contigs in BCF, providing a way of encoding a contig (in the `variant_contig` array) with an integer offset into the `contigs` list.
 
@@ -80,6 +81,7 @@ The reserved dimension names and their sizes are listed in the following table, 
 | `alleles`      | The maximum number of alleles for any record in the VCF. | R |
 | `alt_alleles`  | The maximum number of alternate non-reference alleles for any record in the VCF. | A |
 | `genotypes`    | The maximum number of genotypes for any record in the VCF. | G |
+| `filters`      | The number of filters in the VCF. | |
 
 For fixed-size Number fields (e.g. Number=2) or unknown (Number=.), the dimension name can be any unique name that is not one of the reserved dimension names.
 
@@ -96,9 +98,12 @@ The fixed VCF fields `CHROM`, `POS`, `ID`, `REF`, `ALT`, `QUAL`, and `FILTER` ar
 | `ID`         | `variant_id`       | `(variants)`          | `[variants]`          | `str`   |
 | `REF`, `ALT` | `variant_allele`   | `(variants, alleles)` | `[variants, alleles]` | `str`   |
 | `QUAL`       | `variant_quality`  | `(variants)`          | `[variants]`          | `float` |
-| `FILTER`     | `variant_filter`   | `(variants)`          | `[variants]`          | `str`   |
+| `FILTER`     | `variant_filter`   | `(variants, filters)` | `[variants, filters]` | `bool`  |
 
 Each value in the `variant_contig` array is an integer offset into the `contigs` attribute list.
+
+The `variant_filter` array contains a true value at position `i` if the filter at position `i` in the `filters` attribute list applies for a given variant. If not filters have been applied
+for a variant, all values are false.
 
 ### INFO fields
 
