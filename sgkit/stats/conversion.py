@@ -1,9 +1,9 @@
 import dask.array as da
 import numpy as np
-from numba import guvectorize
 from xarray import Dataset
 
 from sgkit import variables
+from sgkit.nonumba import guvectorize
 from sgkit.typing import ArrayLike
 from sgkit.utils import conditional_merge_datasets, create_dataset
 

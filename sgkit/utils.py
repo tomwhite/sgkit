@@ -2,8 +2,9 @@ import warnings
 from typing import Any, Callable, Hashable, List, Mapping, Optional, Set, Tuple, Union
 
 import numpy as np
-from numba import guvectorize
 from xarray import Dataset
+
+from sgkit.nonumba import guvectorize
 
 from . import variables
 from .typing import ArrayLike, DType

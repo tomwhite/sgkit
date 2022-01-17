@@ -3,11 +3,11 @@ from typing import Any, Dict, Hashable
 import dask.array as da
 import numpy as np
 import xarray as xr
-from numba import guvectorize
 from typing_extensions import Literal
 from xarray import Dataset
 
 from sgkit import variables
+from sgkit.nonumba import guvectorize
 from sgkit.stats.utils import assert_array_shape
 from sgkit.typing import ArrayLike
 from sgkit.utils import (

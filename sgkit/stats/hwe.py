@@ -2,10 +2,10 @@ from typing import Hashable, Optional
 
 import dask.array as da
 import numpy as np
-from numba import njit
 from xarray import Dataset
 
 from sgkit import variables
+from sgkit.nonumba import njit
 from sgkit.stats.aggregation import count_genotypes
 from sgkit.typing import NDArray
 from sgkit.utils import conditional_merge_datasets, create_dataset

@@ -4,10 +4,10 @@ from typing import Hashable, Optional, Sequence, Tuple, Union
 
 import dask.array as da
 import numpy as np
-from numba import guvectorize
 from xarray import Dataset
 
 from sgkit.cohorts import _cohorts_to_array
+from sgkit.nonumba import guvectorize
 from sgkit.stats.utils import assert_array_shape
 from sgkit.typing import ArrayLike
 from sgkit.utils import (

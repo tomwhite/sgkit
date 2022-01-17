@@ -7,10 +7,11 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from dask.dataframe import DataFrame
-from numba import njit
 from xarray import Dataset
 
 from sgkit import variables
+
+from sgkit.nonumba import njit
 from sgkit.typing import ArrayLike, DType
 from sgkit.window import _get_chunked_windows, _sizes_to_start_offsets, has_windows
 
