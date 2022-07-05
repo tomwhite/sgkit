@@ -1,5 +1,7 @@
 from typing import Any, Dict, Hashable
 
+import cubed
+import cubed.array_api as xp
 import dask.array as da
 import numpy as np
 import xarray as xr
@@ -114,16 +116,21 @@ def count_call_alleles(
     """
     variables.validate(ds, {call_genotype: variables.call_genotype_spec})
     n_alleles = ds.dims["alleles"]
-    G = da.asarray(ds[call_genotype])
+    G = xp.asarray(ds[call_genotype])
     shape = (G.chunks[0], G.chunks[1], n_alleles)
-    # use numpy array to avoid dask task dependencies between chunks
-    N = np.empty(n_alleles, dtype=np.uint8)
+    N = xp.empty(n_alleles, dtype=np.uint8)
     new_ds = create_dataset(
         {
             variables.call_allele_count: (
                 ("variants", "samples", "alleles"),
-                da.map_blocks(
-                    count_alleles, G, N, chunks=shape, drop_axis=2, new_axis=2
+                cubed.map_blocks(
+                    count_alleles,
+                    G,
+                    N,
+                    dtype=np.uint8,
+                    chunks=shape,
+                    drop_axis=2,
+                    new_axis=2,
                 ),
             )
         }
@@ -376,6 +383,7 @@ def call_allele_frequencies(
     )
     variables.validate(ds, {call_allele_count: variables.call_allele_count_spec})
     AC = ds[call_allele_count]
+    AC.data = xp.astype(AC.data, np.float64)
     AF = AC / AC.sum(dim="alleles")
     new_ds = create_dataset({variables.call_allele_frequency: AF})
     return conditional_merge_datasets(ds, new_ds, merge)
@@ -471,11 +479,13 @@ def allele_frequency(
         data_vars[variables.variant_allele_count] = AC
 
     M = ds[call_genotype_mask].stack(calls=("samples", "ploidy"))
-    AN = (~M).sum(dim="calls")
+    AN = (~M).astype(np.int32).sum(dim="calls")
     assert AN.shape == (ds.dims["variants"],)
 
     data_vars[variables.variant_allele_total] = AN
-    data_vars[variables.variant_allele_frequency] = AC / AN
+    data_vars[variables.variant_allele_frequency] = AC.astype(np.float32) / AN.astype(
+        np.float32
+    )
     return create_dataset(data_vars)
 
 
@@ -692,7 +702,7 @@ def infer_call_ploidy(
     )
     mixed_ploidy = ds[variables.call_genotype].attrs.get("mixed_ploidy", False)
     if mixed_ploidy:
-        call_ploidy = (~ds[call_genotype_fill]).sum(axis=-1)
+        call_ploidy = (~ds[call_genotype_fill]).astype(np.int32).sum(axis=-1)
     else:
         ploidy = ds[variables.call_genotype].shape[-1]
         call_ploidy = xr.full_like(ds[variables.call_genotype][..., 0], ploidy)
