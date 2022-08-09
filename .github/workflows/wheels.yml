@@ -2,18 +2,11 @@ name: Wheels
 
 on:
   push:
-    branches:
-      - main
-      - test
-    tags:
-      - '*'
   release:
     types: [published]
 
 jobs:
   build:
-    # This workflow only runs on the origin org
-    if: github.repository_owner == 'pystatgen'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,8 +32,6 @@ jobs:
         path: dist
 
   unix-test:
-    # This workflow only runs on the origin org
-    if: github.repository_owner == 'pystatgen'
     needs: ['build']
     strategy:
       matrix:
@@ -71,8 +62,6 @@ jobs:
 
   # Windows doesn't support vcf
   windows-test:
-    # This workflow only runs on the origin org
-    if: github.repository_owner == 'pystatgen'
     runs-on: windows-latest
     needs: ['build']
     strategy:
