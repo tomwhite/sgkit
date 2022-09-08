@@ -24,7 +24,7 @@ from sgkit import (
     variables,
 )
 from sgkit.typing import ArrayLike
-from sgkit.window import window_by_variant
+from sgkit.window import window_by_genome, window_by_variant
 
 from .test_aggregation import get_dataset
 
@@ -188,6 +188,22 @@ def test_divergence(sample_size, n_cohorts, chunks):
         ts_div[i, j] = ts.divergence([subsets[i], subsets[j]], span_normalise=False)
         ts_div[j, i] = ts.divergence([subsets[j], subsets[i]], span_normalise=False)
     np.testing.assert_allclose(div, ts_div)
+
+
+@pytest.mark.parametrize(
+    "sample_size, n_cohorts",
+    [(10, 2)],
+)
+@pytest.mark.parametrize("chunks", [(-1, -1)])
+def test_divergence__by_genome(sample_size, n_cohorts, chunks):
+    ts = simulate_ts(sample_size)
+    ds = ts_to_dataset(ts, chunks)
+    ds, subsets = add_cohorts(ds, ts, n_cohorts)
+    div = divergence(ds).stat_divergence.sum(axis=0, skipna=False, keepdims=True).values
+
+    ds = window_by_genome(ds)
+    div_by_genome = divergence(ds).stat_divergence.values
+    np.testing.assert_allclose(div, div_by_genome)
 
 
 @pytest.mark.parametrize("sample_size, n_cohorts", [(10, 2)])

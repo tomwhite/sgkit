@@ -276,6 +276,26 @@ def _window_per_contig(
     return conditional_merge_datasets(ds, new_ds, merge)
 
 
+def window_by_genome(
+    ds: Dataset,
+    *,
+    merge: bool = True,
+) -> Dataset:
+    new_ds = create_dataset(
+        {
+            window_start: (
+                "windows",
+                np.array([0]),
+            ),
+            window_stop: (
+                "windows",
+                np.array([ds.dims["variants"]]),
+            ),
+        }
+    )
+    return conditional_merge_datasets(ds, new_ds, merge)
+
+
 def _get_windows(
     start: int, stop: int, size: int, step: int
 ) -> Tuple[ArrayLike, ArrayLike]:
@@ -317,6 +337,14 @@ def has_windows(ds: Dataset) -> bool:
     return window_start in ds and window_stop in ds
 
 
+def is_windowed_by_genome(ds: Dataset) -> bool:
+    return (
+        has_windows(ds)
+        and ds.window_start.values == np.array([0])
+        and ds.window_stop.values == np.array([ds.dims["variants"]])
+    )
+
+
 def moving_statistic(
     values: da.Array,
     statistic: Callable[..., ArrayLike],
@@ -356,6 +384,10 @@ def window_statistic(
 
     values = da.asarray(values)
     desired_chunks = chunks or values.chunks
+
+    # special-case for whole-genome
+    if window_starts == np.array([0]) and window_stops == np.array([values.shape[0]]):
+        return statistic(values, **kwargs)
 
     window_lengths = window_stops - window_starts
     depth = np.max(window_lengths)  # type: ignore[no-untyped-call]

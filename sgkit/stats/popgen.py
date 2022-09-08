@@ -279,6 +279,7 @@ def divergence(
             ds.window_stop.values,
             dtype=d.dtype,
             axis=0,
+            keepdims=True,
         )
         new_ds = create_dataset(
             {
