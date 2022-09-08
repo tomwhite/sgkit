@@ -4,6 +4,7 @@ from typing import Hashable, Optional, Sequence, Tuple, Union
 
 import dask.array as da
 import numpy as np
+from typing_extensions import Literal
 from xarray import Dataset
 
 from sgkit.accelerate import numba_guvectorize
@@ -180,6 +181,7 @@ def _divergence(ac: ArrayLike, out: ArrayLike) -> None:  # pragma: no cover
 def divergence(
     ds: Dataset,
     *,
+    by: Optional[Literal["genome", "variant", "window"]] = None,
     cohort_allele_count: Hashable = variables.cohort_allele_count,
     merge: bool = True,
 ) -> Dataset:
@@ -197,6 +199,11 @@ def divergence(
     ----------
     ds
         Genotype call dataset.
+    by
+        The genomic scale to calculate the statistic over. Can be
+        ``genome`` for the whole genome, ``variant`` for per variant, ``window``
+        for per window, or ``None``. If ``None`` the default is ``window``
+        if the dataset is windowed, otherwise ``variant``.
     cohort_allele_count
         Cohort allele count variable to use or calculate. Defined by
         :data:`sgkit.variables.cohort_allele_count_spec`.
@@ -271,7 +278,16 @@ def divergence(
     d = da.map_blocks(_divergence, ac, chunks=shape, dtype=np.float64)
     assert_array_shape(d, n_variants, n_cohorts, n_cohorts)
 
-    if has_windows(ds):
+    if by == "genome":
+        new_ds = create_dataset(
+            {
+                variables.stat_divergence: (
+                    ("variants", "cohorts_0", "cohorts_1"),
+                    d,
+                )
+            }
+        ).sum(dim="variants", skipna=False)
+    elif by == "window" or (by is None and has_windows(ds)):
         div = window_statistic(
             d,
             np.sum,
@@ -288,7 +304,7 @@ def divergence(
                 )
             }
         )
-    else:
+    elif by == "variant" or (by is None and not has_windows(ds)):
         new_ds = create_dataset(
             {
                 variables.stat_divergence: (
@@ -297,6 +313,8 @@ def divergence(
                 )
             }
         )
+    else:
+        raise ValueError(f"Unrecognized `by` keyword: {by}")
     return conditional_merge_datasets(ds, new_ds, merge)
 
 

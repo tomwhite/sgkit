@@ -653,7 +653,7 @@ stat_Fst, stat_Fst_spec = SgkitVariables.register_variable(
 stat_divergence, stat_divergence_spec = SgkitVariables.register_variable(
     ArrayLikeSpec(
         "stat_divergence",
-        ndim=3,
+        ndim={2, 3},
         kind="f",
         __doc__="""Genetic divergence between pairs of cohorts.""",
     )

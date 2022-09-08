@@ -190,6 +190,21 @@ def test_divergence(sample_size, n_cohorts, chunks):
     np.testing.assert_allclose(div, ts_div)
 
 
+@pytest.mark.parametrize(
+    "sample_size, n_cohorts",
+    [(2, 2), (3, 2), (3, 3), (10, 2), (10, 3), (10, 4), (100, 2), (100, 3), (100, 4)],
+)
+@pytest.mark.parametrize("chunks", [(-1, -1), (10, -1)])
+def test_divergence__by_genome(sample_size, n_cohorts, chunks):
+    ts = simulate_ts(sample_size)
+    ds = ts_to_dataset(ts, chunks)
+    ds, subsets = add_cohorts(ds, ts, n_cohorts)
+    div = divergence(ds).stat_divergence.sum(axis=0, skipna=False).values
+
+    div_by_genome = divergence(ds, by="genome").stat_divergence.values
+    np.testing.assert_allclose(div, div_by_genome)
+
+
 @pytest.mark.parametrize("sample_size, n_cohorts", [(10, 2)])
 @pytest.mark.parametrize("chunks", [(-1, -1), (50, -1)])
 def test_divergence__windowed(sample_size, n_cohorts, chunks):
