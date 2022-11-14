@@ -46,7 +46,6 @@ class BedReader(object):
         path: PathType,
         shape: Tuple[int, int],
         dtype: Any = np.int8,
-        count_A1: bool = True,
     ) -> None:
         # n variants (sid = SNP id), n samples (iid = Individual id)
         n_sid, n_iid = shape
@@ -54,7 +53,7 @@ class BedReader(object):
         # load the bim/map/fam files entirely into memory (it does not do out-of-core for those)
         self.bed = open_bed(
             path,
-            count_A1=count_A1,
+            count_A1=False,
             iid_count=n_iid,
             sid_count=n_sid,
             num_threads=None,  # NOTE: Default: Use 'em all!
@@ -132,7 +131,6 @@ def read_plink(
     fam_sep: str = " ",
     bim_sep: str = "\t",
     bim_int_contig: bool = False,
-    count_a1: bool = True,
     lock: bool = False,
     persist: bool = True,
 ) -> Dataset:
@@ -174,14 +172,6 @@ def read_plink(
         If False, then the `variant/contig` field in the resulting
         dataset will contain the indexes of corresponding strings
         encountered in the first `.bim` field.
-    count_a1
-        Whether or not allele counts should be for A1 or A2,
-        by default True. Typically A1 is the minor allele
-        and should be counted instead of A2. This is not enforced
-        by PLINK though and it is up to the data generating process
-        to ensure that A1 is in fact an alternate/minor/effect
-        allele. See https://www.cog-genomics.org/plink/1.9/formats
-        for more details.
     lock
         Whether or not to synchronize concurrent reads of `.bed`
         file blocks, by default False. This is passed through to
@@ -249,7 +239,7 @@ def read_plink(
     # Load genotyping data
     call_genotype = da.from_array(
         # Make sure to use asarray=False in order for masked arrays to propagate
-        BedReader(bed_path, (len(df_bim), len(df_fam)), count_A1=count_a1),  # type: ignore[arg-type]
+        BedReader(bed_path, (len(df_bim), len(df_fam))),  # type: ignore[arg-type]
         chunks=chunks,
         # Lock must be true with multiprocessing dask scheduler
         # to not get bed-reader errors (it works w/ threading backend though)
