@@ -62,6 +62,7 @@ class BedReader(object):
         self.shape = (n_sid, n_iid, 2)
         self.dtype = dtype
         self.ndim = 3
+        self.count_A1 = count_A1
 
     def __getitem__(self, idx: Tuple[Any, ...]) -> NDArray:
         if not isinstance(idx, tuple):
@@ -81,8 +82,13 @@ class BedReader(object):
         #       (missing would then be NaN)
         arr = arr.astype(self.dtype)
         # Add a ploidy dimension, so allele counts of 0, 1, 2 correspond to 00, 10, 11
-        call0 = np.where(arr < 0, -1, np.where(arr == 0, 0, 1))
-        call1 = np.where(arr < 0, -1, np.where(arr == 2, 1, 0))
+        if self.count_A1:
+            call0 = np.where(arr < 0, -1, np.where(arr == 0, 1, 0))
+            call1 = np.where(arr < 0, -1, np.where(arr == 2, 0, 1))
+        else:
+            call0 = np.where(arr < 0, -1, np.where(arr == 0, 0, 1))
+            call1 = np.where(arr < 0, -1, np.where(arr == 2, 1, 0))
+
         arr = np.stack([call0, call1], axis=-1)
         # Apply final slice to 3D result
         return arr[:, :, idx[-1]]
