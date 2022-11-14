@@ -121,14 +121,14 @@ def test_read_call_values(ds1):
         [
             [1, 0],
             [1, 0],
-            [1, 1],
-            [1, 1],
+            [0, 0],
+            [0, 0],
             [-1, -1],
-            [0, 0],
-            [0, 0],
+            [1, 1],
             [1, 1],
             [0, 0],
-            [0, 0],
+            [1, 1],
+            [1, 1],
         ]
     )
     gt = ds1["call_genotype"].values
@@ -151,7 +151,7 @@ def test_read_stat_alt_alleles(ds1):
     n_alt_alleles = (
         ds1["call_genotype"].clip(0, 2).sum(dim="ploidy").sum(dim="variants").values
     )
-    np.testing.assert_equal(n_alt_alleles, [102, 95, 98, 94, 88, 91, 90, 98, 96, 103])
+    np.testing.assert_equal(n_alt_alleles, [88, 85, 84, 80, 84, 75, 82, 76, 88, 81])
 
 
 def test_allele_frequency(ds1):
