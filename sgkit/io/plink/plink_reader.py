@@ -132,7 +132,7 @@ def read_plink(
     fam_sep: str = " ",
     bim_sep: str = "\t",
     bim_int_contig: bool = False,
-    count_a1: bool = True,
+    count_a1: bool = False,
     lock: bool = False,
     persist: bool = True,
 ) -> Dataset:
@@ -176,7 +176,7 @@ def read_plink(
         encountered in the first `.bim` field.
     count_a1
         Whether or not allele counts should be for A1 or A2,
-        by default True. Typically A1 is the minor allele
+        by default False. Typically A1 is the minor allele
         and should be counted instead of A2. This is not enforced
         by PLINK though and it is up to the data generating process
         to ensure that A1 is in fact an alternate/minor/effect
