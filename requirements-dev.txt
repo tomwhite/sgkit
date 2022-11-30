@@ -1,4 +1,5 @@
 callee
+chiscore; python_version<="3.9"
 codecov
 pre-commit
 pytest
