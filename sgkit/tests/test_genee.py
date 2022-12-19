@@ -1,9 +1,6 @@
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-import pytest
-
-pytest.importorskip("chiscore")
 
 from sgkit import genee
 from sgkit.model import create_genotype_call_dataset

@@ -48,11 +48,10 @@ def genee(ds: Dataset, ld: ArrayLike, *, reg_covar: float = 0.000001) -> DataFra
     """
 
     import_required(
-        "chiscore",
-        "Running `genee` requires the `chiscore` python library.\n\n"
-        "Please either conda or pip install as follows:\n\n"
-        "  conda install -c conda-forge chiscore\n"
-        "  python -m pip install chiscore",
+        "momentchi2",
+        "Running `genee` requires the `momentchi2` python library.\n\n"
+        "Please install as follows:\n\n"
+        "  python -m pip install momentchi2",
     )
 
     betas = np.expand_dims(ds["beta"].values, 1)
@@ -134,19 +133,41 @@ def genee_test(gene, ld, betas, epsilon_effect):
     ld_g = ld[gene, gene]
     x = ld_g * epsilon_effect
     e_values = np.linalg.eigvals(x)
+    e_values = ensure_positive_real(e_values)
 
     betas_g = betas[gene]
     test_statistics = betas_g.T @ betas_g
     t_var = np.diag((ld_g * epsilon_effect) @ (ld_g * epsilon_effect)).sum()
 
-    from chiscore import liu_sf
-
-    (q, _, _, _) = liu_sf(
-        test_statistics, e_values, np.ones(len(e_values)), np.zeros(len(e_values))
-    )
-    p_value_g = q
-    p_value_g = np.real_if_close(p_value_g)
-    if p_value_g <= 0.0:  # pragma: no cover
-        p_value_g = 1e-20
+    p_value_g = compute_p_values(e_values, test_statistics)
+    p_value_g = ensure_positive_real(p_value_g)
 
     return test_statistics.squeeze().item(), t_var, p_value_g.squeeze().item()
+
+
+def ensure_positive_real(x):
+    x = np.real_if_close(x)
+    x[x <= 0.0] = 1e-20
+    return x
+
+
+def compute_p_values(e_values, test_statistics, *, method="hbe"):
+    # TODO: wire up method to top-level genee function?
+    if method == "hbe":
+        # see discussion at https://github.com/deanbodenham/momentchi2py
+        # hbe or lpb4 both pass the genee tests here
+        from momentchi2 import hbe  # lpb4 is another option
+
+        return 1.0 - hbe(e_values, test_statistics)
+    elif method == "liu_sf":  # pragma: no cover
+        # https://github.com/limix/chiscore
+        # note that chiscore has a native dependency (chi2comb) and is not
+        # available on all platforms
+        from chiscore import liu_sf
+
+        (q, _, _, _) = liu_sf(
+            test_statistics, e_values, np.ones(len(e_values)), np.zeros(len(e_values))
+        )
+        return q
+    else:  # pragma: no cover
+        raise ValueError(f"Unsupported method: {method}")

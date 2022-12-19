@@ -43,15 +43,11 @@ jobs:
       run: |
         pytest -v
     - name: Test with pytest and coverage (numba jit disabled)
-      # don't run coverage since test_genee.py doesn't work on Python 3.10
-      if: matrix.python-version != '3.10'
       env:
         NUMBA_DISABLE_JIT: 1
       run: |
         pytest -v --cov=sgkit --cov-report=term-missing
     - name: Upload coverage to Codecov
-      # don't run coverage since test_genee.py doesn't work on Python 3.10
-      if: matrix.python-version != '3.10'
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
