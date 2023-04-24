@@ -22,6 +22,7 @@ from sgkit.io.vcf import (
 from sgkit.io.vcf.vcf_reader import (
     FloatFormatFieldWarning,
     merge_zarr_array_sizes,
+    vcf_to_parquet,
     zarr_array_sizes,
 )
 from sgkit.model import get_contigs, get_filters, num_contigs
@@ -1679,3 +1680,18 @@ def test_vcf_to_zarr__no_samples(shared_datadir, tmp_path):
     assert_array_equal(ds["sample_id"], [])
     assert_array_equal(ds["contig_id"], ["1"])
     assert ds.dims["variants"] == 973
+
+
+def test_vcf_to_parquet(shared_datadir, tmp_path):
+    path = path_for_test(shared_datadir, "sample.vcf.gz")
+    output = tmp_path.joinpath("vcf.parquet").as_posix()
+    print(output)
+    vcf_to_parquet(path, output)
+
+
+def test_vcf_to_parquet__parallel(shared_datadir, tmp_path):
+    path = path_for_test(shared_datadir, "CEUTrio.20.21.gatk3.4.g.vcf.bgz")
+    output = tmp_path.joinpath("vcf.parquet").as_posix()
+    print(output)
+    regions = ["20", "21"]
+    vcf_to_parquet(path, output, regions=regions)

@@ -20,6 +20,7 @@ from typing import (
 import dask
 import fsspec
 import numpy as np
+import pandas as pd
 import xarray as xr
 import zarr
 from cyvcf2 import VCF, Variant
@@ -1363,3 +1364,76 @@ def zip_input_and_regions(
     assert len(inputs) == len(input_regions)
 
     return zip(inputs, input_regions)
+
+
+def vcf_to_parquet(
+    input: Union[PathType, Sequence[PathType]],
+    output: PathType,
+    *,
+    regions: Union[None, Sequence[str], Sequence[Optional[Sequence[str]]]] = None,
+    target_part_size: Union[None, int, str] = "auto",
+) -> None:
+    sequential_function = functools.partial(vcf_to_parquet_sequential, output=output)
+    parallel_function = functools.partial(vcf_to_parquet_parallel, output=output)
+    process_vcfs(
+        input,
+        sequential_function,
+        parallel_function,
+        regions=regions,
+        target_part_size=target_part_size,
+    )
+
+
+def vcf_to_parquet_sequential(
+    input: PathType, output: PathType, region: Optional[str] = None
+) -> None:
+    with open_vcf(input) as vcf:
+        if region is None:
+            variants = vcf
+        else:
+            variants = vcf(region)
+
+        variant_ids = []
+        variant_alleles = []
+
+        for variant in region_filter(variants, region):
+            variant_id = variant.ID if variant.ID is not None else "."
+            alleles = [variant.REF] + variant.ALT
+
+            variant_ids.append(variant_id)
+            variant_alleles.append(alleles)
+
+        df = pd.DataFrame(
+            {
+                "variant_id": variant_ids,
+                "variant_alleles": variant_alleles,
+            }
+        )
+        df.to_parquet(output)
+
+
+def vcf_to_parquet_parallel(
+    input: Union[PathType, Sequence[PathType]],
+    output: PathType,
+    regions: Union[None, Sequence[str], Sequence[Optional[Sequence[str]]]],
+) -> Dict[str, Any]:
+    if isinstance(output, str):
+        Path(output).mkdir(parents=True, exist_ok=True)
+    else:
+        output.mkdir(parents=True, exist_ok=True)
+
+    tasks = []
+    for input, input_region_list in zip_input_and_regions(input, regions):
+        if input_region_list is None:
+            # single partition case: make a list so the loop below works
+            input_region_list = [None]  # type: ignore
+        for r, region in enumerate(input_region_list):
+            part_url = build_url(str(output), f"part-{r}.parquet")
+            output_part = part_url  # TODO: fsspec?
+            task = dask.delayed(vcf_to_parquet_sequential)(
+                input,
+                output=output_part,
+                region=region,
+            )
+            tasks.append(task)
+    dask.compute(*tasks)
