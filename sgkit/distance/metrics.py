@@ -59,6 +59,14 @@ def euclidean_map_cpu(
     out[:] = square_sum
 
 
+def euclidean_map_pairwise_cpu(f: ArrayLike, g: ArrayLike) -> ArrayLike:
+    metric_param = np.empty(1, dtype=f.dtype)
+    result: ArrayLike = euclidean_map_cpu(f[:, None, :], g, metric_param)
+    # Adding a new axis to help combine chunks along this axis in the
+    # reduction step (see the _aggregate and _combine functions below).
+    return result[..., np.newaxis]
+
+
 def euclidean_reduce_cpu(v: ArrayLike) -> ArrayLike:  # pragma: no cover
     """Corresponding "reduce" function for euclidean distance.
 
@@ -136,6 +144,15 @@ def correlation_map_cpu(
             len(_x),
         ]
     )
+
+
+def correlation_map_pairwise_cpu(f: ArrayLike, g: ArrayLike) -> ArrayLike:
+    # TODO: note that allocating this array here goes against the advice in api.py about dask graph serialization time
+    metric_param = np.empty(6, dtype=f.dtype)
+    result: ArrayLike = correlation_map_cpu(f[:, None, :], g, metric_param)
+    # Adding a new axis to help combine chunks along this axis in the
+    # reduction step (see the _aggregate and _combine functions below).
+    return result[..., np.newaxis]
 
 
 @numba_guvectorize(  # type: ignore

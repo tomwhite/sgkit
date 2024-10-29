@@ -109,9 +109,9 @@ def pairwise_distance(
             f"Invalid Device, expected one of {valid_devices}, got: {device}"
         )
     try:
-        map_func_name = f"{metric}_map_{device}"
+        map_pairwise_func_name = f"{metric}_map_pairwise_{device}"
         reduce_func_name = f"{metric}_reduce_{device}"
-        map_func = getattr(metrics, map_func_name)
+        map_pairwise_func = getattr(metrics, map_pairwise_func_name)
         reduce_func = getattr(metrics, reduce_func_name)
         n_map_param = metrics.N_MAP_PARAM[metric]
     except AttributeError:
@@ -123,24 +123,7 @@ def pairwise_distance(
     if x.ndim != 2:
         raise ValueError(f"2-dimensional array expected, got '{x.ndim}'")
 
-    # setting this variable outside of _pairwise to avoid it's recreation
-    # in every iteration, which eventually leads to increase in dask
-    # graph serialisation/deserialisation time significantly
-    metric_param = np.empty(n_map_param, dtype=x.dtype)
-
-    def _pairwise_cpu(f: ArrayLike, g: ArrayLike) -> ArrayLike:
-        result: ArrayLike = map_func(f[:, None, :], g, metric_param)
-        # Adding a new axis to help combine chunks along this axis in the
-        # reduction step (see the _aggregate and _combine functions below).
-        return result[..., np.newaxis]
-
-    def _pairwise_gpu(f: ArrayLike, g: ArrayLike) -> ArrayLike:  # pragma: no cover
-        result = map_func(f, g)
-        return result[..., np.newaxis]
-
-    pairwise_func = _pairwise_cpu
-    if device == "gpu":
-        pairwise_func = _pairwise_gpu  # pragma: no cover
+    pairwise_func = map_pairwise_func
 
     # concatenate in blockwise leads to high memory footprints, so instead
     # we perform blockwise without contraction followed by reduction.
