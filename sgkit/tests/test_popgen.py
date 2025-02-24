@@ -3,6 +3,7 @@ import itertools
 import allel
 import msprime  # type: ignore
 import numpy as np
+import pandas as pd
 import pytest
 import tskit  # type: ignore
 import xarray as xr
@@ -27,7 +28,7 @@ from sgkit import (
 )
 from sgkit.stats.popgen_numba_fns import hash_array
 from sgkit.typing import ArrayLike
-from sgkit.window import window_by_genome, window_by_variant
+from sgkit.window import window_by_genome, window_by_position, window_by_variant
 
 from .test_aggregation import get_dataset
 
@@ -159,6 +160,43 @@ def test_diversity__windowed(sample_size):
     np.testing.assert_allclose(
         div[:-1], ska_div
     )  # scikit-allel has final window missing
+
+
+@pytest.mark.parametrize("sample_size", [10])
+@pytest.mark.parametrize("chunks", [(-1, -1), (10, -1)])
+def test_diversity__windowed_by_position_flox(sample_size, chunks):
+    ts = simulate_ts(sample_size, length=200)
+    ds = ts_to_dataset(ts, chunks)
+    ds, subsets = add_cohorts(ds, ts, cohort_key_names=["cohorts"])
+
+    # first compute diversity (not windowed)
+    ds = diversity(ds)
+
+    # now window
+    ds = window_by_position(ds, size=25)
+
+    # compute bins for grouping
+    ds["variant_idx"] = (["variants"], np.arange(len(ds.variants)))
+    bins = window_to_bins(ds)
+
+    # group and sum
+    div = ds.stat_diversity.groupby_bins(
+        ds.variant_idx, bins=bins, include_lowest=True
+    ).sum(dim="variants")
+    print(div.sel(cohorts="co_0").compute())
+
+
+def window_to_bins(ds):
+    bins = (ds.window_start.values, ds.window_stop.values)
+    bincoord = np.array(
+        [
+            pd.Interval(left, right, closed="left")
+            for left, right in zip(*bins)
+            if left != right
+        ],
+        dtype=object,
+    )
+    return pd.IntervalIndex(bincoord)
 
 
 def test_diversity__missing_call_genotype():
